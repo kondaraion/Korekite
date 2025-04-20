@@ -23,11 +23,21 @@ struct ClothingItem: Identifiable, Codable {
         wearHistory.sorted(by: >).prefix(3).map { $0 }
     }
     
+    var isWornToday: Bool {
+        let today = Calendar.current.startOfDay(for: Date())
+        return wearHistory.contains { Calendar.current.isDate($0, inSameDayAs: today) }
+    }
+    
     mutating func wearToday() {
         let today = Calendar.current.startOfDay(for: Date())
         if !wearHistory.contains(where: { Calendar.current.isDate($0, inSameDayAs: today) }) {
             wearHistory.append(today)
         }
+    }
+    
+    mutating func unwearToday() {
+        let today = Calendar.current.startOfDay(for: Date())
+        wearHistory.removeAll { Calendar.current.isDate($0, inSameDayAs: today) }
     }
     
     var image: Image {

@@ -11,6 +11,7 @@ class StorageManager: ObservableObject {
     func saveClothingItems() {
         if let encoded = try? JSONEncoder().encode(clothingItems) {
             UserDefaults.standard.set(encoded, forKey: clothingItemsKey)
+            objectWillChange.send()
         }
     }
     
@@ -18,6 +19,7 @@ class StorageManager: ObservableObject {
         if let data = UserDefaults.standard.data(forKey: clothingItemsKey),
            let decoded = try? JSONDecoder().decode([ClothingItem].self, from: data) {
             clothingItems = decoded
+            objectWillChange.send()
         }
     }
     

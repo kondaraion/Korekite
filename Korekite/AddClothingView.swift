@@ -6,7 +6,6 @@ struct AddClothingView: View {
     @ObservedObject var categoryManager: CategoryManager
     @ObservedObject var storageManager: StorageManager
     
-    @State private var name: String = ""
     @State private var selectedCategory: String = ""
     @State private var memo: String = ""
     @State private var showingCategoryPicker = false
@@ -47,8 +46,6 @@ struct AddClothingView: View {
                 }
                 
                 Section(header: Text("基本情報")) {
-                    TextField("名前", text: $name)
-                    
                     Button(action: {
                         showingCategoryPicker = true
                     }) {
@@ -76,7 +73,7 @@ struct AddClothingView: View {
                 trailing: Button("追加") {
                     addClothing()
                 }
-                .disabled(name.isEmpty || selectedCategory.isEmpty)
+                .disabled(selectedCategory.isEmpty || selectedImageData == nil)
             )
             .sheet(isPresented: $showingCategoryPicker) {
                 NavigationView {
@@ -101,9 +98,10 @@ struct AddClothingView: View {
                     })
                 }
             }
-            .onChange(of: selectedItem) { newItem in
+            .onChange(of: selectedItem) { oldValue, newValue in
                 Task {
-                    if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                    if let item = newValue,
+                       let data = try? await item.loadTransferable(type: Data.self) {
                         selectedImageData = data
                     }
                 }
@@ -113,7 +111,7 @@ struct AddClothingView: View {
     
     private func addClothing() {
         let newItem = ClothingItem(
-            name: name,
+            name: UUID().uuidString, // 一意のIDを名前として使用
             category: selectedCategory,
             memo: memo,
             imageData: selectedImageData

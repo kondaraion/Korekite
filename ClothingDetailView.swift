@@ -6,12 +6,13 @@ struct ClothingDetailView: View {
     @Binding var clothing: ClothingItem
     @ObservedObject var categoryManager: CategoryManager
     @ObservedObject var storageManager: StorageManager
+    @State private var isEditingName = false
+    @State private var editedName: String = ""
     @State private var isEditingMemo = false
     @State private var editedMemo: String = ""
     @State private var showingCategoryPicker = false
     @State private var showingDeleteConfirmation = false
     @State private var selectedItem: PhotosPickerItem?
-    @State private var displayedImage: Image?
     
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -25,34 +26,53 @@ struct ClothingDetailView: View {
         ScrollView {
             VStack(spacing: 20) {
                 ZStack(alignment: .bottomTrailing) {
-                    if let displayedImage {
-                        displayedImage
-                            .resizable()
-                            .scaledToFit()
-                            .frame(maxHeight: 300)
-                    } else {
-                        clothing.image
-                            .resizable()
-                            .scaledToFit()
-                            .frame(maxHeight: 300)
-                    }
+                    clothing.image
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxHeight: 300)
                     
                     PhotosPicker(selection: $selectedItem,
                                matching: .images) {
-                        Image(systemName: "camera.circle.fill")
-                            .font(.system(size: 32))
-                            .foregroundColor(.white)
-                            .background(
-                                Circle()
-                                    .fill(Color.black.opacity(0.5))
-                                    .frame(width: 32, height: 32)
-                            )
-                            .shadow(radius: 2)
+                        Image(systemName: "pencil.circle.fill")
+                            .font(.system(size: 44))
+                            .foregroundColor(.blue)
+                            .background(Color.white)
+                            .clipShape(Circle())
+                            .shadow(radius: 3)
                     }
-                    .padding([.bottom, .trailing], 12)
+                    .padding([.bottom, .trailing], 16)
                 }
                 
                 VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        if isEditingName {
+                            TextField("名前", text: $editedName)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .onSubmit {
+                                    clothing.name = editedName
+                                    isEditingName = false
+                                    storageManager.updateClothingItem(clothing)
+                                }
+                        } else {
+                            Text(clothing.name)
+                                .font(.title)
+                                .bold()
+                        }
+                        
+                        Button(action: {
+                            if isEditingName {
+                                clothing.name = editedName
+                                storageManager.updateClothingItem(clothing)
+                            } else {
+                                editedName = clothing.name
+                            }
+                            isEditingName.toggle()
+                        }) {
+                            Image(systemName: isEditingName ? "checkmark.circle.fill" : "pencil.circle")
+                                .foregroundColor(isEditingName ? .green : .blue)
+                        }
+                    }
+                    
                     Button(action: {
                         showingCategoryPicker = true
                     }) {
@@ -136,21 +156,17 @@ struct ClothingDetailView: View {
                         
                         Button(action: {
                             var updatedClothing = clothing
-                            if updatedClothing.isWornToday {
-                                updatedClothing.unwearToday()
-                            } else {
-                                updatedClothing.wearToday()
-                            }
+                            updatedClothing.wearToday()
                             clothing = updatedClothing
                             storageManager.updateClothingItem(clothing)
                         }) {
                             HStack {
-                                Image(systemName: clothing.isWornToday ? "tshirt.fill" : "tshirt")
-                                Text(clothing.isWornToday ? "今日の着用を取り消す" : "今日着る")
+                                Image(systemName: "tshirt.fill")
+                                Text("今日着る")
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(clothing.isWornToday ? Color.red : Color.blue)
+                            .background(Color.blue)
                             .foregroundColor(.white)
                             .cornerRadius(10)
                         }
@@ -161,23 +177,12 @@ struct ClothingDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(true)
-        .navigationBarItems(
-            leading: Button(action: {
-                dismiss()
-            }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "chevron.left")
-                    Text("一覧へ戻る")
-                }
-            },
-            trailing: Button(action: {
-                showingDeleteConfirmation = true
-            }) {
-                Image(systemName: "trash")
-                    .foregroundColor(.red)
-            }
-        )
+        .navigationBarItems(trailing: Button(action: {
+            showingDeleteConfirmation = true
+        }) {
+            Image(systemName: "trash")
+                .foregroundColor(.red)
+        })
         .alert("削除の確認", isPresented: $showingDeleteConfirmation) {
             Button("削除", role: .destructive) {
                 storageManager.deleteClothingItem(clothing)
@@ -191,16 +196,12 @@ struct ClothingDetailView: View {
             Task {
                 if let item = newValue,
                    let data = try? await item.loadTransferable(type: Data.self) {
-                    await MainActor.run {
-                        var updatedClothing = clothing
-                        updatedClothing.imageData = data
-                        clothing = updatedClothing
-                        displayedImage = Image(uiImage: .init(data: data) ?? .init())
-                        storageManager.updateClothingItem(clothing)
-                    }
+                    var updatedClothing = clothing
+                    updatedClothing.imageData = data
+                    clothing = updatedClothing
+                    storageManager.updateClothingItem(clothing)
                 }
             }
         }
     }
 } 
-

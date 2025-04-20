@@ -10,11 +10,17 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var categoryManager = CategoryManager()
     @StateObject private var storageManager = StorageManager()
-    @State private var selectedCategory: String?
+    @AppStorage("selectedCategory") private var selectedCategory: String?
     @State private var showingAddClothing = false
     
+    // 2列のグリッドレイアウト
+    private let columns = [
+        GridItem(.flexible(), spacing: 1),
+        GridItem(.flexible(), spacing: 1)
+    ]
+    
     var filteredItems: [ClothingItem] {
-        if let category = selectedCategory {
+        if let category = selectedCategory, !category.isEmpty {
             return storageManager.clothingItems.filter { $0.category == category }
         }
         return storageManager.clothingItems
@@ -22,10 +28,10 @@ struct ContentView: View {
     
     var body: some View {
         NavigationView {
-            VStack {
+            VStack(spacing: 0) {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack {
-                        CategoryButton(title: "すべて", isSelected: selectedCategory == nil) {
+                        CategoryButton(title: "すべて", isSelected: selectedCategory == nil || selectedCategory?.isEmpty == true) {
                             selectedCategory = nil
                         }
                         
@@ -40,46 +46,21 @@ struct ContentView: View {
                 .padding(.vertical, 8)
                 
                 ScrollView {
-                    LazyVStack(spacing: 16) {
+                    LazyVGrid(columns: columns, spacing: 1) {
                         ForEach(filteredItems) { item in
                             NavigationLink(destination: ClothingDetailView(clothing: binding(for: item), categoryManager: categoryManager, storageManager: storageManager)) {
-                                HStack(spacing: 16) {
-                                    item.image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 120, height: 120)
-                                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        Text(item.name)
-                                            .font(.headline)
-                                            .lineLimit(1)
-                                        
-                                        Text(item.category)
-                                            .font(.subheadline)
-                                            .foregroundColor(.secondary)
-                                        
-                                        if !item.memo.isEmpty {
-                                            Text(item.memo)
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                                .lineLimit(2)
-                                        }
-                                    }
-                                    Spacer()
-                                }
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(Color(.systemBackground))
-                                .cornerRadius(10)
-                                .shadow(radius: 2)
+                                item.image
+                                    .resizable()
+                                    .aspectRatio(1, contentMode: .fill)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: UIScreen.main.bounds.width / 2) // 画面幅の半分のサイズに設定
+                                    .clipped()
                             }
                         }
                     }
-                    .padding()
                 }
             }
-            .navigationTitle("クローゼット")
+            .navigationTitle("今日はこれ着る？")
             .navigationBarItems(trailing: Button(action: {
                 showingAddClothing = true
             }) {
@@ -93,9 +74,17 @@ struct ContentView: View {
     
     private func binding(for item: ClothingItem) -> Binding<ClothingItem> {
         Binding(
-            get: { item },
+            get: {
+                if let index = storageManager.clothingItems.firstIndex(where: { $0.id == item.id }) {
+                    return storageManager.clothingItems[index]
+                }
+                return item
+            },
             set: { newValue in
-                storageManager.updateClothingItem(newValue)
+                if let index = storageManager.clothingItems.firstIndex(where: { $0.id == newValue.id }) {
+                    storageManager.clothingItems[index] = newValue
+                    storageManager.saveClothingItems()
+                }
             }
         )
     }
