@@ -12,6 +12,9 @@ struct ClothingDetailView: View {
     @State private var showingDeleteConfirmation = false
     @State private var selectedItem: PhotosPickerItem?
     @State private var displayedImage: Image?
+    @State private var isShowingFullScreenImage = false
+    @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
     
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -30,11 +33,17 @@ struct ClothingDetailView: View {
                             .resizable()
                             .scaledToFit()
                             .frame(maxHeight: 300)
+                            .onTapGesture {
+                                isShowingFullScreenImage = true
+                            }
                     } else {
                         clothing.image
                             .resizable()
                             .scaledToFit()
                             .frame(maxHeight: 300)
+                            .onTapGesture {
+                                isShowingFullScreenImage = true
+                            }
                     }
                     
                     PhotosPicker(selection: $selectedItem,
@@ -201,6 +210,58 @@ struct ClothingDetailView: View {
                 }
             }
         }
+        .fullScreenCover(isPresented: $isShowingFullScreenImage) {
+            NavigationView {
+                if let displayedImage {
+                    displayedImage
+                        .resizable()
+                        .scaledToFit()
+                        .scaleEffect(scale)
+                        .gesture(
+                            MagnificationGesture()
+                                .onChanged { value in
+                                    let delta = value / lastScale
+                                    lastScale = value
+                                    scale = min(max(scale * delta, 1.0), 5.0)
+                                }
+                                .onEnded { _ in
+                                    lastScale = 1.0
+                                }
+                        )
+                        .navigationBarItems(trailing: Button("閉じる") {
+                            isShowingFullScreenImage = false
+                            scale = 1.0
+                            lastScale = 1.0
+                        })
+                } else {
+                    clothing.image
+                        .resizable()
+                        .scaledToFit()
+                        .scaleEffect(scale)
+                        .gesture(
+                            MagnificationGesture()
+                                .onChanged { value in
+                                    let delta = value / lastScale
+                                    lastScale = value
+                                    scale = min(max(scale * delta, 1.0), 5.0)
+                                }
+                                .onEnded { _ in
+                                    lastScale = 1.0
+                                }
+                        )
+                        .navigationBarItems(trailing: Button("閉じる") {
+                            isShowingFullScreenImage = false
+                            scale = 1.0
+                            lastScale = 1.0
+                        })
+                }
+            }
+        }
+        .enableInjection()
     }
+
+    #if DEBUG
+    @ObserveInjection var forceRedraw
+    #endif
 } 
 
