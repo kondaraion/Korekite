@@ -13,10 +13,8 @@ struct ClothingListView: View {
         
         // 検索フィルター
         let searchFiltered = searchText.isEmpty ? categoryFiltered : categoryFiltered.filter { item in
-            item.tops.contains { $0.localizedCaseInsensitiveContains(searchText) } ||
-            item.bottoms.localizedCaseInsensitiveContains(searchText) ||
-            item.outer.localizedCaseInsensitiveContains(searchText) ||
-            item.shoes.localizedCaseInsensitiveContains(searchText) ||
+            item.name.localizedCaseInsensitiveContains(searchText) ||
+            item.category.localizedCaseInsensitiveContains(searchText) ||
             item.memo.localizedCaseInsensitiveContains(searchText)
         }
         
