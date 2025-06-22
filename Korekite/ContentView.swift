@@ -21,18 +21,18 @@ struct ContentView: View {
         GridItem(.flexible(), spacing: 1)
     ]
     
-    var filteredItems: [ClothingItem] {
+    var filteredItems: [Outfit] {
         if let category = selectedCategory, !category.isEmpty {
-            return storageManager.clothingItems.filter { $0.category == category }
+            return storageManager.outfits.filter { $0.category == category }
         }
-        return storageManager.clothingItems
+        return storageManager.outfits
     }
     
-    var recommendedItems: [ClothingItem] {
+    var recommendedItems: [Outfit] {
         guard let weatherInfo = weatherService.weatherInfo else {
             return []
         }
-        return storageManager.clothingItems.filter { $0.category == weatherInfo.recommendedCategory }
+        return storageManager.outfits.filter { $0.category == weatherInfo.recommendedCategory }
     }
     
     var body: some View {
@@ -66,7 +66,7 @@ struct ContentView: View {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 8) {
                                     ForEach(recommendedItems.prefix(5)) { item in
-                                        NavigationLink(destination: ClothingDetailView(clothing: binding(for: item), categoryManager: categoryManager, storageManager: storageManager)) {
+                                        NavigationLink(destination: OutfitDetailView(outfit: binding(for: item), categoryManager: categoryManager, storageManager: storageManager)) {
                                             item.image
                                                 .resizable()
                                                 .aspectRatio(1, contentMode: .fill)
@@ -103,7 +103,7 @@ struct ContentView: View {
                 ScrollView {
                     LazyVGrid(columns: columns, spacing: 1) {
                         ForEach(filteredItems) { item in
-                            NavigationLink(destination: ClothingDetailView(clothing: binding(for: item), categoryManager: categoryManager, storageManager: storageManager)) {
+                            NavigationLink(destination: OutfitDetailView(outfit: binding(for: item), categoryManager: categoryManager, storageManager: storageManager)) {
                                 item.image
                                     .resizable()
                                     .aspectRatio(1, contentMode: .fill)
@@ -122,7 +122,7 @@ struct ContentView: View {
                 Image(systemName: "plus")
             })
             .sheet(isPresented: $showingAddClothing) {
-                AddClothingView(categoryManager: categoryManager, storageManager: storageManager)
+                AddOutfitView(categoryManager: categoryManager, storageManager: storageManager)
             }
             .onAppear {
                 locationManager.requestLocation()
@@ -135,18 +135,18 @@ struct ContentView: View {
         }
     }
     
-    private func binding(for item: ClothingItem) -> Binding<ClothingItem> {
+    private func binding(for item: Outfit) -> Binding<Outfit> {
         Binding(
             get: {
-                if let index = storageManager.clothingItems.firstIndex(where: { $0.id == item.id }) {
-                    return storageManager.clothingItems[index]
+                if let index = storageManager.outfits.firstIndex(where: { $0.id == item.id }) {
+                    return storageManager.outfits[index]
                 }
                 return item
             },
             set: { newValue in
-                if let index = storageManager.clothingItems.firstIndex(where: { $0.id == newValue.id }) {
-                    storageManager.clothingItems[index] = newValue
-                    storageManager.saveClothingItems()
+                if let index = storageManager.outfits.firstIndex(where: { $0.id == newValue.id }) {
+                    storageManager.outfits[index] = newValue
+                    storageManager.saveOutfits()
                 }
             }
         )

@@ -1,9 +1,9 @@
 import SwiftUI
 import PhotosUI
 
-struct ClothingDetailView: View {
+struct OutfitDetailView: View {
     @Environment(\.dismiss) private var dismiss
-    @Binding var clothing: ClothingItem
+    @Binding var outfit: Outfit
     @ObservedObject var categoryManager: CategoryManager
     @ObservedObject var storageManager: StorageManager
     @State private var isEditingMemo = false
@@ -15,6 +15,8 @@ struct ClothingDetailView: View {
     @State private var isShowingFullScreenImage = false
     @State private var scale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
+    @State private var showingItemEditor = false
+    @State private var editedItemNames: [String] = []
     
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -37,7 +39,7 @@ struct ClothingDetailView: View {
                                 isShowingFullScreenImage = true
                             }
                     } else {
-                        clothing.image
+                        outfit.image
                             .resizable()
                             .scaledToFit()
                             .frame(maxHeight: 300)
@@ -66,7 +68,7 @@ struct ClothingDetailView: View {
                         showingCategoryPicker = true
                     }) {
                         HStack {
-                            Text("カテゴリー: \(clothing.category)")
+                            Text("カテゴリー: \(outfit.category)")
                                 .foregroundColor(.gray)
                             Image(systemName: "chevron.right")
                                 .foregroundColor(.gray)
@@ -76,14 +78,14 @@ struct ClothingDetailView: View {
                         NavigationView {
                             List(categoryManager.categories, id: \.self) { category in
                                 Button(action: {
-                                    clothing.category = category
+                                    outfit.category = category
                                     showingCategoryPicker = false
-                                    storageManager.updateClothingItem(clothing)
+                                    storageManager.updateOutfit(outfit)
                                 }) {
                                     HStack {
                                         Text(category)
                                         Spacer()
-                                        if category == clothing.category {
+                                        if category == outfit.category {
                                             Image(systemName: "checkmark")
                                                 .foregroundColor(.blue)
                                         }
@@ -104,10 +106,10 @@ struct ClothingDetailView: View {
                             
                             Button(action: {
                                 if isEditingMemo {
-                                    clothing.memo = editedMemo
-                                    storageManager.updateClothingItem(clothing)
+                                    outfit.memo = editedMemo
+                                    storageManager.updateOutfit(outfit)
                                 } else {
-                                    editedMemo = clothing.memo
+                                    editedMemo = outfit.memo
                                 }
                                 isEditingMemo.toggle()
                             }) {
@@ -124,42 +126,73 @@ struct ClothingDetailView: View {
                                         .stroke(Color.gray.opacity(0.3))
                                 )
                         } else {
-                            Text(clothing.memo)
+                            Text(outfit.memo)
                                 .foregroundColor(.gray)
                         }
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("このコーディネートのアイテム")
+                            .font(.headline)
+                        
+                        if outfit.itemNames.isEmpty {
+                            Text("アイテムが登録されていません")
+                                .foregroundColor(.gray)
+                        } else {
+                            VStack(alignment: .leading, spacing: 4) {
+                                ForEach(outfit.itemNames.indices, id: \.self) { index in
+                                    HStack {
+                                        Circle()
+                                            .fill(Color.blue)
+                                            .frame(width: 6, height: 6)
+                                        Text(outfit.itemNames[index])
+                                            .foregroundColor(.primary)
+                                        Spacer()
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        
+                        Button("アイテムを編集") {
+                            editedItemNames = outfit.itemNames
+                            showingItemEditor = true
+                        }
+                        .foregroundColor(.blue)
+                        .padding(.top, 4)
                     }
                     
                     VStack(alignment: .leading, spacing: 8) {
                         Text("着用履歴")
                             .font(.headline)
                         
-                        if clothing.lastWornDates.isEmpty {
+                        if outfit.lastWornDates.isEmpty {
                             Text("まだ着用していません")
                                 .foregroundColor(.gray)
                         } else {
-                            ForEach(clothing.lastWornDates, id: \.self) { date in
+                            ForEach(outfit.lastWornDates, id: \.self) { date in
                                 Text(dateFormatter.string(from: date))
                                     .foregroundColor(.gray)
                             }
                         }
                         
                         Button(action: {
-                            var updatedClothing = clothing
+                            var updatedClothing = outfit
                             if updatedClothing.isWornToday {
                                 updatedClothing.unwearToday()
                             } else {
                                 updatedClothing.wearToday()
                             }
-                            clothing = updatedClothing
-                            storageManager.updateClothingItem(clothing)
+                            outfit = updatedClothing
+                            storageManager.updateOutfit(outfit)
                         }) {
                             HStack {
-                                Image(systemName: clothing.isWornToday ? "tshirt.fill" : "tshirt")
-                                Text(clothing.isWornToday ? "今日の着用を取り消す" : "今日着る")
+                                Image(systemName: outfit.isWornToday ? "tshirt.fill" : "tshirt")
+                                Text(outfit.isWornToday ? "今日の着用を取り消す" : "今日着る")
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(clothing.isWornToday ? Color.red : Color.blue)
+                            .background(outfit.isWornToday ? Color.red : Color.blue)
                             .foregroundColor(.white)
                             .cornerRadius(10)
                         }
@@ -189,23 +222,32 @@ struct ClothingDetailView: View {
         )
         .alert("削除の確認", isPresented: $showingDeleteConfirmation) {
             Button("削除", role: .destructive) {
-                storageManager.deleteClothingItem(clothing)
+                storageManager.deleteOutfit(outfit)
                 dismiss()
             }
             Button("キャンセル", role: .cancel) {}
         } message: {
             Text("この服を削除してもよろしいですか？")
         }
+        .sheet(isPresented: $showingItemEditor) {
+            NavigationView {
+                ItemListEditorView(itemNames: $editedItemNames) {
+                    outfit.itemNames = editedItemNames
+                    storageManager.updateOutfit(outfit)
+                    showingItemEditor = false
+                }
+            }
+        }
         .onChange(of: selectedItem) { oldValue, newValue in
             Task {
                 if let item = newValue,
                    let data = try? await item.loadTransferable(type: Data.self) {
                     await MainActor.run {
-                        var updatedClothing = clothing
+                        var updatedClothing = outfit
                         updatedClothing.imageData = data
-                        clothing = updatedClothing
+                        outfit = updatedClothing
                         displayedImage = Image(uiImage: .init(data: data) ?? .init())
-                        storageManager.updateClothingItem(clothing)
+                        storageManager.updateOutfit(outfit)
                     }
                 }
             }
@@ -234,7 +276,7 @@ struct ClothingDetailView: View {
                             lastScale = 1.0
                         })
                 } else {
-                    clothing.image
+                    outfit.image
                         .resizable()
                         .scaledToFit()
                         .scaleEffect(scale)

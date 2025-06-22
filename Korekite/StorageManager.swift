@@ -1,42 +1,42 @@
 import Foundation
 
 class StorageManager: ObservableObject {
-    @Published var clothingItems: [ClothingItem] = []
-    private let clothingItemsKey = "clothingItems"
+    @Published var outfits: [Outfit] = []
+    private let outfitsKey = "outfits"
     
     init() {
-        loadClothingItems()
+        loadOutfits()
     }
     
-    func saveClothingItems() {
-        if let encoded = try? JSONEncoder().encode(clothingItems) {
-            UserDefaults.standard.set(encoded, forKey: clothingItemsKey)
+    func saveOutfits() {
+        if let encoded = try? JSONEncoder().encode(outfits) {
+            UserDefaults.standard.set(encoded, forKey: outfitsKey)
             objectWillChange.send()
         }
     }
     
-    func loadClothingItems() {
-        if let data = UserDefaults.standard.data(forKey: clothingItemsKey),
-           let decoded = try? JSONDecoder().decode([ClothingItem].self, from: data) {
-            clothingItems = decoded
+    func loadOutfits() {
+        if let data = UserDefaults.standard.data(forKey: outfitsKey),
+           let decoded = try? JSONDecoder().decode([Outfit].self, from: data) {
+            outfits = decoded
             objectWillChange.send()
         }
     }
     
-    func addClothingItem(_ item: ClothingItem) {
-        clothingItems.append(item)
-        saveClothingItems()
+    func addOutfit(_ item: Outfit) {
+        outfits.append(item)
+        saveOutfits()
     }
     
-    func updateClothingItem(_ item: ClothingItem) {
-        if let index = clothingItems.firstIndex(where: { $0.id == item.id }) {
-            clothingItems[index] = item
-            saveClothingItems()
+    func updateOutfit(_ item: Outfit) {
+        if let index = outfits.firstIndex(where: { $0.id == item.id }) {
+            outfits[index] = item
+            saveOutfits()
         }
     }
     
-    func deleteClothingItem(_ item: ClothingItem) {
-        clothingItems.removeAll { $0.id == item.id }
-        saveClothingItems()
+    func deleteOutfit(_ item: Outfit) {
+        outfits.removeAll { $0.id == item.id }
+        saveOutfits()
     }
 } 

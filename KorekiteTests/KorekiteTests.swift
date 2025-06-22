@@ -11,8 +11,8 @@ import Foundation
 
 struct KorekiteTests {
 
-    @Test func testClothingItemInitialization() async throws {
-        let item = ClothingItem(name: "テストシャツ", category: "トップス")
+    @Test func testOutfitInitialization() async throws {
+        let item = Outfit(name: "テストシャツ", category: "トップス")
         
         #expect(item.name == "テストシャツ")
         #expect(item.category == "トップス")
@@ -22,8 +22,8 @@ struct KorekiteTests {
         #expect(!item.isWornToday)
     }
     
-    @Test func testClothingItemWearToday() async throws {
-        var item = ClothingItem(name: "テストシャツ", category: "トップス")
+    @Test func testOutfitWearToday() async throws {
+        var item = Outfit(name: "テストシャツ", category: "トップス")
         
         #expect(!item.isWornToday)
         
@@ -37,8 +37,8 @@ struct KorekiteTests {
         #expect(item.wearHistory.count == 1)
     }
     
-    @Test func testClothingItemUnwearToday() async throws {
-        var item = ClothingItem(name: "テストシャツ", category: "トップス")
+    @Test func testOutfitUnwearToday() async throws {
+        var item = Outfit(name: "テストシャツ", category: "トップス")
         
         item.wearToday()
         #expect(item.isWornToday)
@@ -48,8 +48,8 @@ struct KorekiteTests {
         #expect(item.wearHistory.isEmpty)
     }
     
-    @Test func testClothingItemLastWornDates() async throws {
-        var item = ClothingItem(name: "テストシャツ", category: "トップス")
+    @Test func testOutfitLastWornDates() async throws {
+        var item = Outfit(name: "テストシャツ", category: "トップス")
         
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
@@ -67,8 +67,8 @@ struct KorekiteTests {
         #expect(lastWorn[2] == twoDaysAgo)
     }
     
-    @Test func testClothingItemCoding() async throws {
-        let originalItem = ClothingItem(
+    @Test func testOutfitCoding() async throws {
+        let originalItem = Outfit(
             name: "テストシャツ",
             category: "トップス",
             memo: "お気に入り",
@@ -80,7 +80,7 @@ struct KorekiteTests {
         let decoder = JSONDecoder()
         
         let encoded = try encoder.encode(originalItem)
-        let decodedItem = try decoder.decode(ClothingItem.self, from: encoded)
+        let decodedItem = try decoder.decode(Outfit.self, from: encoded)
         
         #expect(decodedItem.id == originalItem.id)
         #expect(decodedItem.name == originalItem.name)

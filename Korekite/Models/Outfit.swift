@@ -2,21 +2,23 @@ import Foundation
 import SwiftUI
 import UIKit
 
-struct ClothingItem: Identifiable, Codable {
+struct Outfit: Identifiable, Codable {
     let id: UUID
     var name: String
     var category: String
     var memo: String
     var wearHistory: [Date]
     var imageData: Data?
+    var itemNames: [String]
     
-    init(id: UUID = UUID(), name: String, category: String, memo: String = "", wearHistory: [Date] = [], imageData: Data? = nil) {
+    init(id: UUID = UUID(), name: String, category: String, memo: String = "", wearHistory: [Date] = [], imageData: Data? = nil, itemNames: [String] = []) {
         self.id = id
         self.name = name
         self.category = category
         self.memo = memo
         self.wearHistory = wearHistory
         self.imageData = imageData
+        self.itemNames = itemNames
     }
     
     var lastWornDates: [Date] {

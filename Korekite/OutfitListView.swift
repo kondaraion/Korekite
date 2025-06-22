@@ -1,12 +1,12 @@
 import SwiftUI
 
-struct ClothingListView: View {
+struct OutfitListView: View {
     @ObservedObject var storageManager: StorageManager
     @State private var selectedCategory: String = "すべて"
     @State private var searchText: String = ""
     
-    private var filteredClothingItems: [ClothingItem] {
-        let items = storageManager.clothingItems
+    private var filteredOutfits: [Outfit] {
+        let items = storageManager.outfits
         
         // カテゴリーフィルター
         let categoryFiltered = selectedCategory == "すべて" ? items : items.filter { $0.category == selectedCategory }
@@ -27,8 +27,8 @@ struct ClothingListView: View {
     }
     
     var body: some View {
-        List(filteredClothingItems) { item in
-            NavigationLink(destination: ClothingDetailView(clothing: binding(for: item), categoryManager: CategoryManager(), storageManager: storageManager)) {
+        List(filteredOutfits) { item in
+            NavigationLink(destination: OutfitDetailView(outfit: binding(for: item), categoryManager: CategoryManager(), storageManager: storageManager)) {
                 HStack {
                     item.image
                         .resizable()
@@ -47,21 +47,21 @@ struct ClothingListView: View {
             }
         }
         .searchable(text: $searchText, prompt: "検索")
-        .navigationTitle("服一覧")
+        .navigationTitle("コーディネート一覧")
     }
     
-    private func binding(for item: ClothingItem) -> Binding<ClothingItem> {
+    private func binding(for item: Outfit) -> Binding<Outfit> {
         Binding(
             get: {
-                if let index = storageManager.clothingItems.firstIndex(where: { $0.id == item.id }) {
-                    return storageManager.clothingItems[index]
+                if let index = storageManager.outfits.firstIndex(where: { $0.id == item.id }) {
+                    return storageManager.outfits[index]
                 }
                 return item
             },
             set: { newValue in
-                if let index = storageManager.clothingItems.firstIndex(where: { $0.id == newValue.id }) {
-                    storageManager.clothingItems[index] = newValue
-                    storageManager.saveClothingItems()
+                if let index = storageManager.outfits.firstIndex(where: { $0.id == newValue.id }) {
+                    storageManager.outfits[index] = newValue
+                    storageManager.saveOutfits()
                 }
             }
         )

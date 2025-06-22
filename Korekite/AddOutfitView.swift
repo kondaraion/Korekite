@@ -1,7 +1,7 @@
 import SwiftUI
 import PhotosUI
 
-struct AddClothingView: View {
+struct AddOutfitView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var categoryManager: CategoryManager
     @ObservedObject var storageManager: StorageManager
@@ -110,13 +110,13 @@ struct AddClothingView: View {
     }
     
     private func addClothing() {
-        let newItem = ClothingItem(
+        let newItem = Outfit(
             name: UUID().uuidString, // 一意のIDを名前として使用
             category: selectedCategory,
             memo: memo,
             imageData: selectedImageData
         )
-        storageManager.addClothingItem(newItem)
+        storageManager.addOutfit(newItem)
         dismiss()
     }
 } 
