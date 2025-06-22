@@ -90,4 +90,7 @@ fastlane/test_output
 iOSInjectionProject/
 
 # Mac OS
-.DS_Store 
+.DS_Store
+
+# API Keys
+Config.plist 
