@@ -13,6 +13,7 @@ struct ContentView: View {
     @StateObject private var storageManager = StorageManager()
     @StateObject private var locationManager = LocationManager()
     @StateObject private var weatherService = WeatherService()
+    @StateObject private var itemNameManager = ItemNameManager()
     @AppStorage("selectedCategory") private var selectedCategory: String?
     @State private var showingAddClothing = false
     
@@ -71,7 +72,7 @@ struct ContentView: View {
                                     ScrollView(.horizontal, showsIndicators: false) {
                                         HStack(spacing: DesignSystem.Spacing.sm) {
                                             ForEach(recommendedItems.prefix(3)) { item in
-                                                NavigationLink(destination: OutfitDetailView(outfit: binding(for: item), categoryManager: categoryManager, storageManager: storageManager)) {
+                                                NavigationLink(destination: OutfitDetailView(outfit: binding(for: item), categoryManager: categoryManager, storageManager: storageManager, itemNameManager: itemNameManager)) {
                                                     item.image
                                                         .resizable()
                                                         .aspectRatio(1, contentMode: .fill)
@@ -150,7 +151,7 @@ struct ContentView: View {
                     // 服のグリッド
                     LazyVGrid(columns: columns, spacing: DesignSystem.Spacing.sm) {
                         ForEach(filteredItems) { item in
-                            NavigationLink(destination: OutfitDetailView(outfit: binding(for: item), categoryManager: categoryManager, storageManager: storageManager)) {
+                            NavigationLink(destination: OutfitDetailView(outfit: binding(for: item), categoryManager: categoryManager, storageManager: storageManager, itemNameManager: itemNameManager)) {
                                 OutfitCard(outfit: item)
                             }
                             .buttonStyle(PlainButtonStyle())
@@ -190,6 +191,11 @@ struct ContentView: View {
             }
             .onAppear {
                 locationManager.requestLocation()
+                
+                // 初回のみ既存データからアイテム名を初期化
+                if itemNameManager.allItemNames.isEmpty {
+                    itemNameManager.initializeFromExistingData(storageManager.outfits)
+                }
             }
             .onChange(of: locationManager.location) { location in
                 if let location = location {

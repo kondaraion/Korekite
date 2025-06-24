@@ -6,6 +6,7 @@ struct OutfitDetailView: View {
     @Binding var outfit: Outfit
     @ObservedObject var categoryManager: CategoryManager
     @ObservedObject var storageManager: StorageManager
+    @ObservedObject var itemNameManager: ItemNameManager
     @State private var isEditingMemo = false
     @State private var editedMemo: String = ""
     @State private var showingCategoryPicker = false
@@ -320,7 +321,7 @@ struct OutfitDetailView: View {
         }
         .sheet(isPresented: $showingItemEditor) {
             NavigationView {
-                ItemListEditorView(itemNames: $editedItemNames) {
+                ItemListEditorView(itemNames: $editedItemNames, itemNameManager: itemNameManager) {
                     outfit.itemNames = editedItemNames
                     storageManager.updateOutfit(outfit)
                     showingItemEditor = false
