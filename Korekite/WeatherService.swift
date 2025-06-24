@@ -317,8 +317,8 @@ class WeatherService: ObservableObject {
         guard !todayForecasts.isEmpty else { return nil }
         
         // 最高・最低気温を計算
-        let minTemp = todayForecasts.map { $0.main.tempMin }.min() ?? 0
-        let maxTemp = todayForecasts.map { $0.main.tempMax }.max() ?? 0
+        let minTemp = todayForecasts.map { $0.main.temp }.min() ?? 0
+        let maxTemp = todayForecasts.map { $0.main.temp }.max() ?? 0
         
         return (min: minTemp, max: maxTemp)
     }

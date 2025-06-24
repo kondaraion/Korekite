@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import CoreLocation
 
 struct ContentView: View {
     @StateObject private var categoryManager = CategoryManager()
@@ -17,8 +18,8 @@ struct ContentView: View {
     
     // 2列のグリッドレイアウト
     private let columns = [
-        GridItem(.flexible(), spacing: 1),
-        GridItem(.flexible(), spacing: 1)
+        GridItem(.flexible(), spacing: DesignSystem.Spacing.xs),
+        GridItem(.flexible(), spacing: DesignSystem.Spacing.xs)
     ]
     
     var filteredItems: [Outfit] {
@@ -37,116 +38,153 @@ struct ContentView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // 天気情報とおすすめコーディネート
-                if let weatherInfo = weatherService.weatherInfo {
-                    VStack(spacing: 8) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("\(Int(weatherInfo.temperature))°C")
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                Text("\(Int(weatherInfo.tempMin))°C - \(Int(weatherInfo.tempMax))°C")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            Text(weatherInfo.description)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Text("おすすめ: \(weatherInfo.recommendedCategory)")
-                                .font(.subheadline)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.blue.opacity(0.1))
-                                .cornerRadius(8)
-                        }
-                        
-                        if !recommendedItems.isEmpty {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 8) {
-                                    ForEach(recommendedItems.prefix(5)) { item in
-                                        NavigationLink(destination: OutfitDetailView(outfit: binding(for: item), categoryManager: categoryManager, storageManager: storageManager)) {
-                                            item.image
-                                                .resizable()
-                                                .aspectRatio(1, contentMode: .fill)
-                                                .frame(width: 60, height: 60)
-                                                .cornerRadius(8)
-                                                .clipped()
-                                        }
+            ScrollView {
+                VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
+                    // 天気情報表示
+                    if let weatherInfo = weatherService.weatherInfo {
+                        CardView(padding: DesignSystem.Spacing.cardPadding) {
+                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                                HStack {
+                                    Text("天気: \(weatherInfo.description)")
+                                        .font(DesignSystem.Typography.headline)
+                                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                                    Spacer()
+                                    HStack(spacing: DesignSystem.Spacing.xs) {
+                                        Text("\(Int(weatherInfo.tempMin))°C")
+                                            .font(DesignSystem.Typography.title3)
+                                            .foregroundColor(.blue)
+                                        Text("/")
+                                            .font(DesignSystem.Typography.title3)
+                                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                                        Text("\(Int(weatherInfo.tempMax))°C")
+                                            .font(DesignSystem.Typography.title3)
+                                            .foregroundColor(.red)
                                     }
                                 }
-                                .padding(.horizontal)
-                            }
-                        }
-                    }
-                    .padding()
-                    .background(Color.gray.opacity(0.05))
-                    .onTapGesture {
-                        handleWeatherTap()
-                    }
-                    .overlay(
-                        HStack {
-                            Spacer()
-                            VStack {
-                                if weatherService.isLoading {
-                                    ProgressView()
-                                        .scaleEffect(0.8)
-                                        .padding(.trailing, 8)
-                                        .padding(.top, 8)
+                                
+                                Text("おすすめカテゴリ: \(weatherInfo.recommendedCategory)")
+                                    .font(DesignSystem.Typography.body)
+                                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                                
+                                // おすすめアイテムを表示
+                                if !recommendedItems.isEmpty {
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: DesignSystem.Spacing.sm) {
+                                            ForEach(recommendedItems.prefix(3)) { item in
+                                                NavigationLink(destination: OutfitDetailView(outfit: binding(for: item), categoryManager: categoryManager, storageManager: storageManager)) {
+                                                    item.image
+                                                        .resizable()
+                                                        .aspectRatio(1, contentMode: .fill)
+                                                        .frame(width: 60, height: 60)
+                                                        .cornerRadius(DesignSystem.CornerRadius.image)
+                                                        .clipped()
+                                                }
+                                            }
+                                        }
+                                        .padding(.horizontal, 2)
+                                    }
                                 }
-                                Spacer()
                             }
                         }
-                    )
-                }
-                
-                // エラーメッセージの表示
-                if let errorMessage = weatherService.errorMessage {
-                    Text(errorMessage)
-                        .font(.caption)
-                        .foregroundColor(.red)
-                        .padding(.horizontal)
-                        .padding(.top, 4)
-                }
-                
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack {
-                        CategoryButton(title: "すべて", isSelected: selectedCategory == nil || selectedCategory?.isEmpty == true) {
-                            selectedCategory = nil
+                        .onTapGesture {
+                            handleWeatherTap()
                         }
-                        
-                        ForEach(categoryManager.categories, id: \.self) { category in
-                            CategoryButton(title: category, isSelected: selectedCategory == category) {
-                                selectedCategory = category
+                        .padding(.horizontal, DesignSystem.Spacing.md)
+                    } else if weatherService.isLoading {
+                        CardView(padding: DesignSystem.Spacing.cardPadding) {
+                            HStack(spacing: DesignSystem.Spacing.md) {
+                                ProgressView()
+                                    .tint(DesignSystem.Colors.accent)
+                                Text("天気情報を取得中...")
+                                    .font(DesignSystem.Typography.bodyMedium)
+                                    .foregroundColor(DesignSystem.Colors.textSecondary)
                             }
                         }
+                        .padding(.horizontal, DesignSystem.Spacing.md)
+                    } else {
+                        CardView(padding: DesignSystem.Spacing.cardPadding) {
+                            VStack(spacing: DesignSystem.Spacing.md) {
+                                Text("天気情報が利用できません")
+                                    .font(DesignSystem.Typography.bodyMedium)
+                                    .foregroundColor(DesignSystem.Colors.textSecondary)
+                                
+                                VStack(spacing: DesignSystem.Spacing.sm) {
+                                    PrimaryButton("位置情報を許可", icon: "location") {
+                                        locationManager.requestLocation()
+                                    }
+                                    
+                                    SecondaryButton("テストデータ", icon: "flask") {
+                                        createTestWeatherData()
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.horizontal, DesignSystem.Spacing.md)
                     }
-                    .padding(.horizontal)
-                }
-                .padding(.vertical, 8)
-                
-                ScrollView {
-                    LazyVGrid(columns: columns, spacing: 1) {
+                    
+                    // カテゴリー選択
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: DesignSystem.Spacing.sm) {
+                            EnhancedCategoryButton(
+                                "すべて",
+                                isSelected: selectedCategory == nil || selectedCategory?.isEmpty == true,
+                                count: storageManager.outfits.count
+                            ) {
+                                selectedCategory = nil
+                            }
+                            
+                            ForEach(categoryManager.categories, id: \.self) { category in
+                                let count = storageManager.outfits.filter { $0.category == category }.count
+                                EnhancedCategoryButton(
+                                    category,
+                                    isSelected: selectedCategory == category,
+                                    count: count
+                                ) {
+                                    selectedCategory = category
+                                }
+                            }
+                        }
+                        .padding(.horizontal, DesignSystem.Spacing.md)
+                    }
+                    
+                    // 服のグリッド
+                    LazyVGrid(columns: columns, spacing: DesignSystem.Spacing.sm) {
                         ForEach(filteredItems) { item in
                             NavigationLink(destination: OutfitDetailView(outfit: binding(for: item), categoryManager: categoryManager, storageManager: storageManager)) {
-                                item.image
-                                    .resizable()
-                                    .aspectRatio(1, contentMode: .fill)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: UIScreen.main.bounds.width / 2) // 画面幅の半分のサイズに設定
-                                    .clipped()
+                                OutfitCard(outfit: item)
                             }
+                            .buttonStyle(PlainButtonStyle())
                         }
                     }
+                    .padding(.horizontal, DesignSystem.Spacing.md)
                 }
+                .padding(.top, DesignSystem.Spacing.sm)
             }
-            .navigationTitle("今日はこれ着る？")
-            .navigationBarItems(trailing: Button(action: {
-                showingAddClothing = true
-            }) {
-                Image(systemName: "plus")
-            })
+            .background(
+                LinearGradient(
+                    colors: [
+                        DesignSystem.Colors.background,
+                        DesignSystem.Colors.backgroundSecondary
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .navigationBarHidden(true)
+            .overlay(
+                // 右下のFloating Action Button
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        FloatingActionButton(icon: "plus") {
+                            showingAddClothing = true
+                        }
+                        .padding(.trailing, DesignSystem.Spacing.lg)
+                        .padding(.bottom, DesignSystem.Spacing.xl)
+                    }
+                }
+            )
             .sheet(isPresented: $showingAddClothing) {
                 AddOutfitView(categoryManager: categoryManager, storageManager: storageManager)
             }
@@ -173,6 +211,35 @@ struct ContentView: View {
         }
     }
     
+    // テスト用天気データを作成
+    private func createTestWeatherData() {
+        print("🧪 テスト天気データを作成中...")
+        let testWeatherInfo = WeatherInfo(
+            temperature: 22.0,
+            tempMin: 18.0,
+            tempMax: 26.0,
+            description: "晴れ（テストデータ）",
+            icon: "01d",
+            recommendedCategory: "涼しい"
+        )
+        weatherService.weatherInfo = testWeatherInfo
+        weatherService.isLoading = false
+        weatherService.errorMessage = nil
+        print("✅ テスト天気データが設定されました: \(testWeatherInfo.description)")
+    }
+    
+    // 認証ステータスを文字列に変換
+    private func authStatusString(_ status: CLAuthorizationStatus) -> String {
+        switch status {
+        case .notDetermined: return "未決定"
+        case .denied: return "拒否"
+        case .restricted: return "制限"
+        case .authorizedWhenInUse: return "使用中のみ許可"
+        case .authorizedAlways: return "常に許可"
+        @unknown default: return "不明"
+        }
+    }
+    
     private func binding(for item: Outfit) -> Binding<Outfit> {
         Binding(
             get: {
@@ -191,22 +258,6 @@ struct ContentView: View {
     }
 }
 
-struct CategoryButton: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(isSelected ? Color.blue : Color.gray.opacity(0.2))
-                .foregroundColor(isSelected ? .white : .primary)
-                .cornerRadius(20)
-        }
-    }
-}
 
 #Preview {
     ContentView()
