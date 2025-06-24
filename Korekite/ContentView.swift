@@ -82,6 +82,32 @@ struct ContentView: View {
                     }
                     .padding()
                     .background(Color.gray.opacity(0.05))
+                    .onTapGesture {
+                        handleWeatherTap()
+                    }
+                    .overlay(
+                        HStack {
+                            Spacer()
+                            VStack {
+                                if weatherService.isLoading {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                        .padding(.trailing, 8)
+                                        .padding(.top, 8)
+                                }
+                                Spacer()
+                            }
+                        }
+                    )
+                }
+                
+                // エラーメッセージの表示
+                if let errorMessage = weatherService.errorMessage {
+                    Text(errorMessage)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .padding(.horizontal)
+                        .padding(.top, 4)
                 }
                 
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -132,6 +158,18 @@ struct ContentView: View {
                     weatherService.fetchWeather(for: location)
                 }
             }
+        }
+    }
+    
+    // 天気情報タップ時の処理
+    private func handleWeatherTap() {
+        guard let location = locationManager.location else {
+            return
+        }
+        
+        // 1時間以内に取得済みの場合は何もしない
+        if weatherService.shouldFetchWeather() {
+            weatherService.refreshWeather(for: location)
         }
     }
     
