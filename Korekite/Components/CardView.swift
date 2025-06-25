@@ -36,6 +36,7 @@ struct WeatherCard: View {
     let recommendedItems: [Outfit]
     let categoryManager: CategoryManager
     let storageManager: StorageManager
+    let itemNameManager: ItemNameManager
     
     var body: some View {
         CardView(padding: DesignSystem.Spacing.lg) {
@@ -96,7 +97,7 @@ struct WeatherCard: View {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: DesignSystem.Spacing.sm) {
                                 ForEach(recommendedItems.prefix(5)) { item in
-                                    NavigationLink(destination: OutfitDetailView(outfit: binding(for: item), categoryManager: categoryManager, storageManager: storageManager)) {
+                                    NavigationLink(destination: OutfitDetailView(outfit: binding(for: item), categoryManager: categoryManager, storageManager: storageManager, itemNameManager: itemNameManager)) {
                                         item.image
                                             .resizable()
                                             .aspectRatio(1, contentMode: .fill)
@@ -277,7 +278,8 @@ struct RoundedCorner: Shape {
             onTap: {},
             recommendedItems: [],
             categoryManager: CategoryManager(),
-            storageManager: StorageManager()
+            storageManager: StorageManager(),
+            itemNameManager: ItemNameManager()
         )
     }
     .padding()

@@ -1,16 +1,23 @@
 import SwiftUI
 import PhotosUI
+import UIKit
+import AVFoundation
 
 struct AddOutfitView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var categoryManager: CategoryManager
     @ObservedObject var storageManager: StorageManager
+    @ObservedObject var weatherService: WeatherService
     
     @State private var selectedCategory: String = ""
     @State private var memo: String = ""
     @State private var showingCategoryPicker = false
     @State private var selectedItem: PhotosPickerItem?
     @State private var selectedImageData: Data?
+    @State private var showingImageSourceSelection = false
+    @State private var showingCameraPicker = false
+    @State private var showingPhotoPicker = false
+    @State private var capturedImage: UIImage?
     
     var body: some View {
         NavigationView {
@@ -39,10 +46,37 @@ struct AddOutfitView: View {
                         Spacer()
                     }
                     
-                    PhotosPicker(selection: $selectedItem,
-                               matching: .images) {
-                        Label("写真を選択", systemImage: "photo.on.rectangle")
+                    HStack {
+                        Spacer()
+                        
+                        Button(action: {
+                            showingImageSourceSelection = true
+                        }) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 32))
+                                .foregroundColor(.blue)
+                        }
+                        .actionSheet(isPresented: $showingImageSourceSelection) {
+                            ActionSheet(title: Text("写真を追加"), buttons: [
+                                .default(Text("カメラで撮影")) {
+                                    showingCameraPicker = true
+                                },
+                                .default(Text("ライブラリから選択")) {
+                                    showingPhotoPicker = true
+                                },
+                                .cancel()
+                            ])
+                        }
+                        .sheet(isPresented: $showingCameraPicker) {
+                            CameraImagePicker(selectedImage: $capturedImage, sourceType: .camera)
+                        }
+                        .sheet(isPresented: $showingPhotoPicker) {
+                            CameraImagePicker(selectedImage: $capturedImage, sourceType: .photoLibrary)
+                        }
+                        
+                        Spacer()
                     }
+                    
                 }
                 
                 Section(header: Text("基本情報")) {
@@ -65,7 +99,8 @@ struct AddOutfitView: View {
                         .frame(height: 100)
                 }
             }
-            .navigationTitle("新規服の追加")
+            .navigationTitle("新規コーディネートの追加")
+            .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
                 leading: Button("キャンセル") {
                     dismiss()
@@ -101,10 +136,21 @@ struct AddOutfitView: View {
             .onChange(of: selectedItem) { oldValue, newValue in
                 Task {
                     if let item = newValue,
-                       let data = try? await item.loadTransferable(type: Data.self) {
-                        selectedImageData = data
+                       let data = try? await item.loadTransferable(type: Data.self),
+                       let uiImage = UIImage(data: data) {
+                        selectedImageData = ImageUtils.processForStorage(uiImage)
                     }
                 }
+            }
+            .onChange(of: capturedImage) { oldValue, newValue in
+                if let image = newValue {
+                    selectedImageData = ImageUtils.processForStorage(image)
+                }
+            }
+        }
+        .onAppear {
+            if selectedCategory.isEmpty {
+                selectedCategory = weatherService.weatherInfo?.recommendedCategory ?? ""
             }
         }
     }
@@ -118,5 +164,14 @@ struct AddOutfitView: View {
         )
         storageManager.addOutfit(newItem)
         dismiss()
+    }
+    
+    private func isCameraAvailable() -> Bool {
+        guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
+            return false
+        }
+        
+        let authStatus = AVCaptureDevice.authorizationStatus(for: .video)
+        return authStatus == .authorized || authStatus == .notDetermined
     }
 } 

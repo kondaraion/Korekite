@@ -31,6 +31,7 @@ struct ItemListEditorView: View {
                     ForEach(itemNames.indices, id: \.self) { index in
                         HStack {
                             TextField("アイテム名", text: $itemNames[index])
+                                .font(.body)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                             Button(action: {
                                 itemNames.remove(at: index)
@@ -52,7 +53,7 @@ struct ItemListEditorView: View {
                             Button(showingAllSuggestions ? "折りたたむ" : "すべて表示") {
                                 showingAllSuggestions.toggle()
                             }
-                            .font(.caption)
+                            .font(.footnote)
                             .foregroundColor(.blue)
                         }
                     }) {
@@ -70,13 +71,14 @@ struct ItemListEditorView: View {
                                         Image(systemName: "plus.circle")
                                             .foregroundColor(.green)
                                         Text(suggestion)
+                                            .font(.body)
                                             .foregroundColor(.primary)
                                         Spacer()
                                         
                                         // 頻度表示
                                         if let frequency = itemNameManager.frequentItemNames.first(where: { $0.name == suggestion })?.count {
                                             Text("\(frequency)回")
-                                                .font(.caption)
+                                                .font(.footnote)
                                                 .foregroundColor(.gray)
                                                 .padding(.horizontal, 6)
                                                 .padding(.vertical, 2)
@@ -99,6 +101,7 @@ struct ItemListEditorView: View {
                             Image(systemName: "magnifyingglass")
                                 .foregroundColor(.gray)
                             TextField("アイテム名を検索または入力", text: $searchQuery)
+                                .font(.body)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .onSubmit {
                                     if !searchQuery.isEmpty && !itemNames.contains(searchQuery) {
@@ -110,6 +113,7 @@ struct ItemListEditorView: View {
                         // 手動入力エリア
                         HStack {
                             TextField("新しいアイテム名", text: $newItemName)
+                                .font(.body)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                             Button(action: addItem) {
                                 Image(systemName: "plus.circle.fill")
@@ -132,7 +136,7 @@ struct ItemListEditorView: View {
                                             itemNameManager.addItemName(suggestion)
                                         }) {
                                             Text(suggestion)
-                                                .font(.caption)
+                                                .font(.subheadline)
                                                 .padding(.horizontal, 12)
                                                 .padding(.vertical, 6)
                                                 .background(Color.blue.opacity(0.1))

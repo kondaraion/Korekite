@@ -2,6 +2,7 @@ import SwiftUI
 
 struct OutfitListView: View {
     @ObservedObject var storageManager: StorageManager
+    @ObservedObject var itemNameManager: ItemNameManager
     @State private var selectedCategory: String = "すべて"
     @State private var searchText: String = ""
     
@@ -28,7 +29,7 @@ struct OutfitListView: View {
     
     var body: some View {
         List(filteredOutfits) { item in
-            NavigationLink(destination: OutfitDetailView(outfit: binding(for: item), categoryManager: CategoryManager(), storageManager: storageManager)) {
+            NavigationLink(destination: OutfitDetailView(outfit: binding(for: item), categoryManager: CategoryManager(), storageManager: storageManager, itemNameManager: itemNameManager)) {
                 HStack {
                     item.image
                         .resizable()

@@ -30,286 +30,18 @@ struct OutfitDetailView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
-                // プレミアムな画像表示
-                ZStack(alignment: .bottomTrailing) {
-                    CardView(
-                        padding: 0,
-                        cornerRadius: DesignSystem.CornerRadius.premium,
-                        shadow: DesignSystem.Shadow.large
-                    ) {
-                        if let displayedImage {
-                            displayedImage
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(maxHeight: 350)
-                                .cornerRadius(DesignSystem.CornerRadius.premium)
-                                .onTapGesture {
-                                    isShowingFullScreenImage = true
-                                }
-                        } else {
-                            outfit.image
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(maxHeight: 350)
-                                .cornerRadius(DesignSystem.CornerRadius.premium)
-                                .onTapGesture {
-                                    isShowingFullScreenImage = true
-                                }
-                        }
-                    }
-                    
-                    // エレガントな編集ボタン
-                    PhotosPicker(selection: $selectedItem, matching: .images) {
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(DesignSystem.Colors.textInverse)
-                            .frame(width: 44, height: 44)
-                            .background(
-                                Circle()
-                                    .fill(DesignSystem.Colors.accent)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(DesignSystem.Colors.cardBackground, lineWidth: 2)
-                                    )
-                            )
-                            .designSystemShadow(DesignSystem.Shadow.medium)
-                    }
-                    .padding(DesignSystem.Spacing.md)
-                }
-                
-                // ファッション情報セクション
-                CardView(padding: DesignSystem.Spacing.cardPadding) {
-                    VStack(spacing: DesignSystem.Spacing.md) {
-                        // カテゴリー選択
-                        Button(action: {
-                            showingCategoryPicker = true
-                        }) {
-                            HStack {
-                                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                    Text("カテゴリー")
-                                        .font(DesignSystem.Typography.caption)
-                                        .foregroundColor(DesignSystem.Colors.textTertiary)
-                                    
-                                    Text(outfit.category)
-                                        .font(DesignSystem.Typography.bodyMedium)
-                                        .foregroundColor(DesignSystem.Colors.accent)
-                                }
-                                
-                                Spacer()
-                                
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(DesignSystem.Colors.textTertiary)
-                            }
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
-                .sheet(isPresented: $showingCategoryPicker) {
-                        NavigationView {
-                            List(categoryManager.categories, id: \.self) { category in
-                                Button(action: {
-                                    outfit.category = category
-                                    showingCategoryPicker = false
-                                    storageManager.updateOutfit(outfit)
-                                }) {
-                                    HStack {
-                                        Text(category)
-                                            .font(DesignSystem.Typography.bodyMedium)
-                                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                                        Spacer()
-                                        if category == outfit.category {
-                                            Image(systemName: "checkmark")
-                                                .font(.system(size: 16, weight: .semibold))
-                                                .foregroundColor(DesignSystem.Colors.accent)
-                                        }
-                                    }
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                            .navigationTitle("カテゴリー選択")
-                            .navigationBarTitleDisplayMode(.inline)
-                            .navigationBarItems(trailing: Button("キャンセル") {
-                                showingCategoryPicker = false
-                            }
-                            .foregroundColor(DesignSystem.Colors.accent))
-                        }
-                    }
-                
-                // メモセクション
-                CardView(padding: DesignSystem.Spacing.cardPadding) {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                        HStack {
-                            Text("メモ")
-                                .font(DesignSystem.Typography.headlineBold)
-                                .foregroundColor(DesignSystem.Colors.textPrimary)
-                            
-                            Spacer()
-                            
-                            Button(action: {
-                                if isEditingMemo {
-                                    outfit.memo = editedMemo
-                                    storageManager.updateOutfit(outfit)
-                                } else {
-                                    editedMemo = outfit.memo
-                                }
-                                isEditingMemo.toggle()
-                            }) {
-                                Image(systemName: isEditingMemo ? "checkmark.circle.fill" : "pencil.circle")
-                                    .font(.system(size: 18, weight: .medium))
-                                    .foregroundColor(isEditingMemo ? DesignSystem.Colors.success : DesignSystem.Colors.accent)
-                            }
-                        }
-                        
-                        if isEditingMemo {
-                            TextEditor(text: $editedMemo)
-                                .frame(height: 100)
-                                .padding(DesignSystem.Spacing.sm)
-                                .background(DesignSystem.Colors.backgroundSecondary)
-                                .cornerRadius(DesignSystem.CornerRadius.small)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
-                                        .stroke(DesignSystem.Colors.cardBorder, lineWidth: 1)
-                                )
-                        } else {
-                            if outfit.memo.isEmpty {
-                                Text("メモがありません")
-                                    .font(DesignSystem.Typography.body)
-                                    .foregroundColor(DesignSystem.Colors.textTertiary)
-                                    .italic()
-                            } else {
-                                Text(outfit.memo)
-                                    .font(DesignSystem.Typography.body)
-                                    .foregroundColor(DesignSystem.Colors.textSecondary)
-                            }
-                        }
-                    }
-                }
-                
-                // アイテムセクション
-                CardView(padding: DesignSystem.Spacing.cardPadding) {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                        HStack {
-                            Text("アイテム")
-                                .font(DesignSystem.Typography.headlineBold)
-                                .foregroundColor(DesignSystem.Colors.textPrimary)
-                            
-                            Spacer()
-                            
-                            Button("編集") {
-                                editedItemNames = outfit.itemNames
-                                showingItemEditor = true
-                            }
-                            .font(DesignSystem.Typography.bodyMedium)
-                            .foregroundColor(DesignSystem.Colors.accent)
-                        }
-                        
-                        if outfit.itemNames.isEmpty {
-                            Text("アイテムが登録されていません")
-                                .font(DesignSystem.Typography.body)
-                                .foregroundColor(DesignSystem.Colors.textTertiary)
-                                .italic()
-                        } else {
-                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                                ForEach(outfit.itemNames.indices, id: \.self) { index in
-                                    HStack(spacing: DesignSystem.Spacing.sm) {
-                                        Circle()
-                                            .fill(DesignSystem.Colors.accent)
-                                            .frame(width: 6, height: 6)
-                                        Text(outfit.itemNames[index])
-                                            .font(DesignSystem.Typography.body)
-                                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                                        Spacer()
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // 着用履歴セクション
-                CardView(padding: DesignSystem.Spacing.cardPadding) {
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                        Text("着用履歴")
-                            .font(DesignSystem.Typography.headlineBold)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
-                        
-                        if outfit.lastWornDates.isEmpty {
-                            Text("まだ着用していません")
-                                .font(DesignSystem.Typography.body)
-                                .foregroundColor(DesignSystem.Colors.textTertiary)
-                                .italic()
-                        } else {
-                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                ForEach(outfit.lastWornDates, id: \.self) { date in
-                                    Text(dateFormatter.string(from: date))
-                                        .font(DesignSystem.Typography.body)
-                                        .foregroundColor(DesignSystem.Colors.textSecondary)
-                                }
-                            }
-                        }
-                        
-                        if outfit.isWornToday {
-                            PrimaryButton("今日の着用を取り消す", icon: "tshirt.fill") {
-                                var updatedClothing = outfit
-                                updatedClothing.unwearToday()
-                                outfit = updatedClothing
-                                storageManager.updateOutfit(outfit)
-                            }
-                        } else {
-                            Button(action: {
-                                var updatedClothing = outfit
-                                updatedClothing.wearToday()
-                                outfit = updatedClothing
-                                storageManager.updateOutfit(outfit)
-                            }) {
-                                HStack(spacing: DesignSystem.Spacing.sm) {
-                                    Image(systemName: "tshirt")
-                                        .font(.system(size: 16, weight: .medium))
-                                    Text("今日着る")
-                                        .font(DesignSystem.Typography.bodyMedium)
-                                }
-                            }
-                            .accentButtonStyle()
-                        }
-                    }
-                }
-                .padding(.horizontal, DesignSystem.Spacing.md)
+                imageSection
+                categorySection
+                memoSection
+                itemsSection
+                wearHistorySection
             }
             .padding(.bottom, DesignSystem.Spacing.xl)
         }
-        .background(
-            LinearGradient(
-                colors: [
-                    DesignSystem.Colors.background,
-                    DesignSystem.Colors.backgroundSecondary
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
+        .background(backgroundGradient)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
-        .navigationBarItems(
-            leading: Button(action: {
-                dismiss()
-            }) {
-                HStack(spacing: DesignSystem.Spacing.xs) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .medium))
-                    Text("戻る")
-                        .font(DesignSystem.Typography.bodyMedium)
-                }
-                .foregroundColor(DesignSystem.Colors.accent)
-            },
-            trailing: Button(action: {
-                showingDeleteConfirmation = true
-            }) {
-                Image(systemName: "trash")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(DesignSystem.Colors.error)
-            }
-        )
+        .navigationBarItems(leading: backButton, trailing: deleteButton)
         .alert("削除の確認", isPresented: $showingDeleteConfirmation) {
             Button("削除", role: .destructive) {
                 storageManager.deleteOutfit(outfit)
@@ -321,11 +53,11 @@ struct OutfitDetailView: View {
         }
         .sheet(isPresented: $showingItemEditor) {
             NavigationView {
-                ItemListEditorView(itemNames: $editedItemNames, itemNameManager: itemNameManager) {
+                ItemListEditorView(itemNames: $editedItemNames, onSave: {
                     outfit.itemNames = editedItemNames
                     storageManager.updateOutfit(outfit)
                     showingItemEditor = false
-                }
+                }, itemNameManager: itemNameManager)
             }
         }
         .onChange(of: selectedItem) { oldValue, newValue in
@@ -388,6 +120,316 @@ struct OutfitDetailView: View {
                         })
                 }
             }
+        }
+    }
+    
+    // MARK: - View Components
+    
+    @ViewBuilder
+    private var imageSection: some View {
+        ZStack(alignment: .bottomTrailing) {
+            CardView(
+                padding: 0,
+                cornerRadius: DesignSystem.CornerRadius.premium,
+                shadow: DesignSystem.Shadow.large
+            ) {
+                if let displayedImage {
+                    displayedImage
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxHeight: 350)
+                        .cornerRadius(DesignSystem.CornerRadius.premium)
+                        .onTapGesture {
+                            isShowingFullScreenImage = true
+                        }
+                } else {
+                    outfit.image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxHeight: 350)
+                        .cornerRadius(DesignSystem.CornerRadius.premium)
+                        .onTapGesture {
+                            isShowingFullScreenImage = true
+                        }
+                }
+            }
+            
+            PhotosPicker(selection: $selectedItem, matching: .images) {
+                Image(systemName: "camera.fill")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(DesignSystem.Colors.textInverse)
+                    .frame(width: 44, height: 44)
+                    .background(
+                        Circle()
+                            .fill(DesignSystem.Colors.accent)
+                            .overlay(
+                                Circle()
+                                    .stroke(DesignSystem.Colors.cardBackground, lineWidth: 2)
+                            )
+                    )
+                    .designSystemShadow(DesignSystem.Shadow.medium)
+            }
+            .padding(DesignSystem.Spacing.md)
+        }
+    }
+    
+    @ViewBuilder
+    private var categorySection: some View {
+        CardView(padding: DesignSystem.Spacing.cardPadding) {
+            VStack(spacing: DesignSystem.Spacing.md) {
+                Button(action: {
+                    showingCategoryPicker = true
+                }) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                            Text("カテゴリー")
+                                .font(DesignSystem.Typography.caption)
+                                .foregroundColor(DesignSystem.Colors.textTertiary)
+                            
+                            Text(outfit.category)
+                                .font(DesignSystem.Typography.bodyMedium)
+                                .foregroundColor(DesignSystem.Colors.accent)
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(DesignSystem.Colors.textTertiary)
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .sheet(isPresented: $showingCategoryPicker) {
+            categoryPickerSheet
+        }
+    }
+    
+    @ViewBuilder
+    private var categoryPickerSheet: some View {
+        NavigationView {
+            List(categoryManager.categories, id: \.self) { category in
+                Button(action: {
+                    outfit.category = category
+                    showingCategoryPicker = false
+                    storageManager.updateOutfit(outfit)
+                }) {
+                    HStack {
+                        Text(category)
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                        Spacer()
+                        if category == outfit.category {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(DesignSystem.Colors.accent)
+                        }
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .navigationTitle("カテゴリー選択")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(trailing: Button("キャンセル") {
+                showingCategoryPicker = false
+            }
+            .foregroundColor(DesignSystem.Colors.accent))
+        }
+    }
+    
+    @ViewBuilder
+    private var memoSection: some View {
+        CardView(padding: DesignSystem.Spacing.cardPadding) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                HStack {
+                    Text("メモ")
+                        .font(DesignSystem.Typography.headlineBold)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        if isEditingMemo {
+                            outfit.memo = editedMemo
+                            storageManager.updateOutfit(outfit)
+                        } else {
+                            editedMemo = outfit.memo
+                        }
+                        isEditingMemo.toggle()
+                    }) {
+                        Image(systemName: isEditingMemo ? "checkmark.circle.fill" : "pencil.circle")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(isEditingMemo ? DesignSystem.Colors.success : DesignSystem.Colors.accent)
+                    }
+                }
+                
+                if isEditingMemo {
+                    TextEditor(text: $editedMemo)
+                        .frame(height: 100)
+                        .padding(DesignSystem.Spacing.sm)
+                        .background(DesignSystem.Colors.backgroundSecondary)
+                        .cornerRadius(DesignSystem.CornerRadius.small)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
+                                .stroke(DesignSystem.Colors.cardBorder, lineWidth: 1)
+                        )
+                } else {
+                    if outfit.memo.isEmpty {
+                        Text("メモがありません")
+                            .font(DesignSystem.Typography.body)
+                            .foregroundColor(DesignSystem.Colors.textTertiary)
+                            .italic()
+                    } else {
+                        Text(outfit.memo)
+                            .font(DesignSystem.Typography.body)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var itemsSection: some View {
+        CardView(padding: DesignSystem.Spacing.cardPadding) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                HStack {
+                    Text("アイテム")
+                        .font(DesignSystem.Typography.headlineBold)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    
+                    Spacer()
+                    
+                    Button("編集") {
+                        editedItemNames = outfit.itemNames
+                        showingItemEditor = true
+                    }
+                    .font(DesignSystem.Typography.bodyMedium)
+                    .foregroundColor(DesignSystem.Colors.accent)
+                }
+                
+                if outfit.itemNames.isEmpty {
+                    Text("アイテムが登録されていません")
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(DesignSystem.Colors.textTertiary)
+                        .italic()
+                } else {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                        ForEach(outfit.itemNames.indices, id: \.self) { index in
+                            HStack(spacing: DesignSystem.Spacing.sm) {
+                                Circle()
+                                    .fill(DesignSystem.Colors.accent)
+                                    .frame(width: 6, height: 6)
+                                Text(outfit.itemNames[index])
+                                    .font(DesignSystem.Typography.body)
+                                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                                Spacer()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showingItemEditor) {
+            itemEditorSheet
+        }
+    }
+    
+    @ViewBuilder
+    private var itemEditorSheet: some View {
+        NavigationView {
+            ItemListEditorView(itemNames: $editedItemNames, onSave: {
+                outfit.itemNames = editedItemNames
+                storageManager.updateOutfit(outfit)
+                showingItemEditor = false
+            }, itemNameManager: itemNameManager)
+        }
+    }
+    
+    @ViewBuilder
+    private var wearHistorySection: some View {
+        CardView(padding: DesignSystem.Spacing.cardPadding) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                Text("着用履歴")
+                    .font(DesignSystem.Typography.headlineBold)
+                    .foregroundColor(DesignSystem.Colors.textPrimary)
+                
+                if outfit.lastWornDates.isEmpty {
+                    Text("まだ着用していません")
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(DesignSystem.Colors.textTertiary)
+                        .italic()
+                } else {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                        ForEach(outfit.lastWornDates, id: \.self) { date in
+                            Text(dateFormatter.string(from: date))
+                                .font(DesignSystem.Typography.body)
+                                .foregroundColor(DesignSystem.Colors.textSecondary)
+                        }
+                    }
+                }
+                
+                if outfit.isWornToday {
+                    PrimaryButton("今日の着用を取り消す", icon: "tshirt.fill") {
+                        var updatedClothing = outfit
+                        updatedClothing.unwearToday()
+                        outfit = updatedClothing
+                        storageManager.updateOutfit(outfit)
+                    }
+                } else {
+                    Button(action: {
+                        var updatedClothing = outfit
+                        updatedClothing.wearToday()
+                        outfit = updatedClothing
+                        storageManager.updateOutfit(outfit)
+                    }) {
+                        HStack(spacing: DesignSystem.Spacing.sm) {
+                            Image(systemName: "tshirt")
+                                .font(.system(size: 16, weight: .medium))
+                            Text("今日着る")
+                                .font(DesignSystem.Typography.bodyMedium)
+                        }
+                    }
+                    .accentButtonStyle()
+                }
+            }
+        }
+        .padding(.horizontal, DesignSystem.Spacing.md)
+    }
+    
+    private var backgroundGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                DesignSystem.Colors.background,
+                DesignSystem.Colors.backgroundSecondary
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+    
+    private var backButton: some View {
+        Button(action: {
+            dismiss()
+        }) {
+            HStack(spacing: DesignSystem.Spacing.xs) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .medium))
+                Text("戻る")
+                    .font(DesignSystem.Typography.bodyMedium)
+            }
+            .foregroundColor(DesignSystem.Colors.accent)
+        }
+    }
+    
+    private var deleteButton: some View {
+        Button(action: {
+            showingDeleteConfirmation = true
+        }) {
+            Image(systemName: "trash")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundColor(DesignSystem.Colors.error)
         }
     }
 }

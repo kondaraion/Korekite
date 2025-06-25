@@ -402,7 +402,9 @@
 				ENABLE_MODULE_VERIFIER = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "服の写真を撮影するためにカメラへのアクセスが必要です";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "今日の天気に基づいておすすめの服装を提案するため";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "服の写真を選択するためにフォトライブラリへのアクセスが必要です";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -434,7 +436,9 @@
 				ENABLE_MODULE_VERIFIER = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "服の写真を撮影するためにカメラへのアクセスが必要です";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "今日の天気に基づいておすすめの服装を提案するため";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "服の写真を選択するためにフォトライブラリへのアクセスが必要です";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

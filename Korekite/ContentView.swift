@@ -187,7 +187,7 @@ struct ContentView: View {
                 }
             )
             .sheet(isPresented: $showingAddClothing) {
-                AddOutfitView(categoryManager: categoryManager, storageManager: storageManager)
+                AddOutfitView(categoryManager: categoryManager, storageManager: storageManager, weatherService: weatherService)
             }
             .onAppear {
                 locationManager.requestLocation()
@@ -197,7 +197,7 @@ struct ContentView: View {
                     itemNameManager.initializeFromExistingData(storageManager.outfits)
                 }
             }
-            .onChange(of: locationManager.location) { location in
+            .onChange(of: locationManager.location) { _, location in
                 if let location = location {
                     weatherService.fetchWeather(for: location)
                 }
