@@ -8,6 +8,11 @@ class SearchManager: ObservableObject {
     @Published var showFavoritesOnly = false
     @Published var showUnwornOnly = false
     @Published var showRecentlyWornOnly = false
+    @Published var isFiltering = false
+    
+    // フィルタリング結果のキャッシュ
+    private var cachedResults: [Outfit] = []
+    private var lastFilterHash: Int = 0
     
     enum SortOption: String, CaseIterable {
         case dateAdded = "追加日"
@@ -28,6 +33,52 @@ class SearchManager: ObservableObject {
     }
     
     func filteredAndSortedOutfits(_ outfits: [Outfit]) -> [Outfit] {
+        // フィルタ条件のハッシュを作成
+        let currentHash = calculateFilterHash(outfits: outfits)
+        
+        // キャッシュが有効な場合は結果を返す
+        if currentHash == lastFilterHash && !cachedResults.isEmpty {
+            return cachedResults
+        }
+        
+        // 同期的にフィルタリングを実行（UIの応答性を保つため）
+        let result = performFiltering(outfits)
+        
+        // キャッシュを更新
+        cachedResults = result
+        lastFilterHash = currentHash
+        
+        return result
+    }
+    
+    // 非同期でフィルタリングを実行（重い処理用）
+    func filteredAndSortedOutfitsAsync(_ outfits: [Outfit]) async -> [Outfit] {
+        let currentHash = calculateFilterHash(outfits: outfits)
+        
+        // キャッシュが有効な場合は結果を返す
+        if currentHash == lastFilterHash && !cachedResults.isEmpty {
+            return cachedResults
+        }
+        
+        await MainActor.run {
+            isFiltering = true
+        }
+        
+        let result = await Task.detached(priority: .userInitiated) {
+            return self.performFiltering(outfits)
+        }.value
+        
+        await MainActor.run {
+            self.cachedResults = result
+            self.lastFilterHash = currentHash
+            self.isFiltering = false
+        }
+        
+        return result
+    }
+    
+    // 実際のフィルタリング処理
+    private func performFiltering(_ outfits: [Outfit]) -> [Outfit] {
         var filtered = outfits
         
         // テキスト検索
@@ -67,6 +118,19 @@ class SearchManager: ObservableObject {
         return sortOutfits(filtered)
     }
     
+    // フィルタ条件のハッシュを計算
+    private func calculateFilterHash(outfits: [Outfit]) -> Int {
+        var hasher = Hasher()
+        hasher.combine(searchText)
+        hasher.combine(selectedCategories)
+        hasher.combine(selectedSortOption)
+        hasher.combine(showFavoritesOnly)
+        hasher.combine(showUnwornOnly)
+        hasher.combine(showRecentlyWornOnly)
+        hasher.combine(outfits.count)
+        return hasher.finalize()
+    }
+    
     private func sortOutfits(_ outfits: [Outfit]) -> [Outfit] {
         switch selectedSortOption {
         case .dateAdded:
@@ -92,6 +156,16 @@ class SearchManager: ObservableObject {
         showFavoritesOnly = false
         showUnwornOnly = false
         showRecentlyWornOnly = false
+        
+        // キャッシュもクリア
+        cachedResults.removeAll()
+        lastFilterHash = 0
+    }
+    
+    // キャッシュを無効化
+    func invalidateCache() {
+        cachedResults.removeAll()
+        lastFilterHash = 0
     }
     
     var hasActiveFilters: Bool {

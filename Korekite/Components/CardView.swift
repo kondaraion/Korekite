@@ -1,5 +1,9 @@
 import SwiftUI
 
+extension Notification.Name {
+    static let outfitImageUpdated = Notification.Name("outfitImageUpdated")
+}
+
 struct CardView<Content: View>: View {
     let content: Content
     let padding: CGFloat
@@ -161,16 +165,35 @@ struct WeatherCard: View {
 struct OutfitCard: View {
     let outfit: Outfit
     @ObservedObject var storageManager: StorageManager
+    @State private var cachedImage: UIImage?
+    
+    // 現在のお気に入り状態を取得
+    private var currentOutfit: Outfit {
+        if let index = storageManager.outfits.firstIndex(where: { $0.id == outfit.id }) {
+            return storageManager.outfits[index]
+        }
+        return outfit
+    }
     
     var body: some View {
         VStack(spacing: 0) {
             // プレミアムな画像表示
             ZStack {
-                outfit.image
-                    .resizable()
-                    .aspectRatio(1, contentMode: .fill)
-                    .frame(maxWidth: .infinity)
-                    .clipped()
+                Group {
+                    if let image = cachedImage {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(1, contentMode: .fill)
+                            .frame(maxWidth: .infinity)
+                            .clipped()
+                    } else {
+                        Image(systemName: "tshirt")
+                            .font(.system(size: 40))
+                            .foregroundColor(DesignSystem.Colors.textTertiary)
+                            .frame(maxWidth: .infinity, minHeight: 200)
+                            .background(DesignSystem.Colors.backgroundSecondary)
+                    }
+                }
                 
                 // エレガントなオーバーレイ
                 LinearGradient(
@@ -187,9 +210,9 @@ struct OutfitCard: View {
                     HStack {
                         Spacer()
                         Button(action: toggleFavorite) {
-                            Image(systemName: outfit.isFavorite ? "heart.fill" : "heart")
+                            Image(systemName: currentOutfit.isFavorite ? "heart.fill" : "heart")
                                 .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(outfit.isFavorite ? .red : .white)
+                                .foregroundColor(currentOutfit.isFavorite ? .red : .white)
                                 .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
                         }
                         .padding(DesignSystem.Spacing.sm)
@@ -202,7 +225,7 @@ struct OutfitCard: View {
             // 洗練された情報表示部分
             VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
                 HStack {
-                    Text(outfit.category)
+                    Text(currentOutfit.category)
                         .font(DesignSystem.Typography.categoryLabel)
                         .foregroundColor(DesignSystem.Colors.accent)
                         .fontWeight(.medium)
@@ -210,13 +233,13 @@ struct OutfitCard: View {
                     Spacer()
                     
                     // カテゴリーアイコン
-                    Image(systemName: getCategoryIcon(outfit.category))
+                    Image(systemName: getCategoryIcon(currentOutfit.category))
                         .font(.system(size: 12))
                         .foregroundColor(DesignSystem.Colors.textTertiary)
                 }
                 
-                if !outfit.memo.isEmpty {
-                    Text(outfit.memo)
+                if !currentOutfit.memo.isEmpty {
+                    Text(currentOutfit.memo)
                         .font(DesignSystem.Typography.footnote)
                         .foregroundColor(DesignSystem.Colors.textSecondary)
                         .lineLimit(2)
@@ -235,10 +258,32 @@ struct OutfitCard: View {
         .designSystemShadow(DesignSystem.Shadow.card)
         .scaleEffect(1.0)
         .animation(DesignSystem.Animation.smooth, value: false)
+        .onAppear {
+            Task {
+                await loadImageAsync()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .outfitImageUpdated)) { notification in
+            if let outfitId = notification.userInfo?["outfitId"] as? UUID, outfitId == outfit.id {
+                Task {
+                    await loadImageAsync()
+                }
+            }
+        }
+    }
+    
+    // 非同期で画像を読み込み（パフォーマンス向上）
+    @MainActor
+    private func loadImageAsync() async {
+        guard cachedImage == nil else { return }
+        
+        // StorageManagerのメソッドは既にメインスレッド対応済みなので直接呼び出し
+        let image = storageManager.getCachedUIImage(for: outfit)
+        self.cachedImage = image
     }
     
     private func toggleFavorite() {
-        var updatedOutfit = outfit
+        var updatedOutfit = currentOutfit
         updatedOutfit.isFavorite.toggle()
         storageManager.updateOutfit(updatedOutfit)
     }

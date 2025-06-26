@@ -28,24 +28,32 @@ struct OutfitListView: View {
     }
     
     var body: some View {
-        List(filteredOutfits) { item in
-            NavigationLink(destination: OutfitDetailView(outfit: binding(for: item), categoryManager: CategoryManager(), storageManager: storageManager, itemNameManager: itemNameManager)) {
-                HStack {
-                    item.image
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 60, height: 60)
-                        .cornerRadius(8)
-                    
-                    VStack(alignment: .leading) {
-                        Text(item.name)
-                            .font(.headline)
-                        Text(item.category)
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
+        ZStack {
+            Color(.systemBackground)
+                .ignoresSafeArea()
+            
+            List(filteredOutfits) { item in
+                NavigationLink(destination: OutfitDetailView(outfit: binding(for: item), categoryManager: CategoryManager(), storageManager: storageManager, itemNameManager: itemNameManager)) {
+                    HStack {
+                        item.image
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 60, height: 60)
+                            .cornerRadius(8)
+                        
+                        VStack(alignment: .leading) {
+                            Text(item.name)
+                                .font(.headline)
+                            Text(item.category)
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                        }
                     }
+                    .listRowBackground(Color(.systemBackground))
                 }
             }
+            .listStyle(PlainListStyle())
+            .scrollContentBackground(.hidden)
         }
         .searchable(text: $searchText, prompt: "検索")
         .navigationTitle("コーディネート一覧")

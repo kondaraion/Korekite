@@ -38,13 +38,14 @@ struct OutfitDetailView: View {
                 memoSection
                 itemsSection
                 wearHistorySection
+                favoriteSection
             }
             .padding(.bottom, DesignSystem.Spacing.xl)
         }
         .background(backgroundGradient)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
-        .navigationBarItems(leading: backButton, trailing: deleteButton)
+        .navigationBarItems(leading: backButton, trailing: trailingButtons)
         .alert("削除の確認", isPresented: $showingDeleteConfirmation) {
             Button("削除", role: .destructive) {
                 storageManager.deleteOutfit(outfit)
@@ -498,6 +499,70 @@ struct OutfitDetailView: View {
                     .font(DesignSystem.Typography.bodyMedium)
             }
             .foregroundColor(DesignSystem.Colors.accent)
+        }
+    }
+    
+    // お気に入り切り替え
+    private func toggleFavorite() {
+        outfit.isFavorite.toggle()
+        storageManager.updateOutfit(outfit)
+    }
+    
+    @ViewBuilder
+    private var favoriteSection: some View {
+        CardView(padding: DesignSystem.Spacing.cardPadding) {
+            HStack(spacing: DesignSystem.Spacing.md) {
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                    Text("お気に入り")
+                        .font(DesignSystem.Typography.headline)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    
+                    Text(outfit.isFavorite ? "登録済み" : "未登録")
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(outfit.isFavorite ? DesignSystem.Colors.accent : DesignSystem.Colors.textSecondary)
+                }
+                
+                Spacer()
+                
+                Button(action: toggleFavorite) {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        Image(systemName: outfit.isFavorite ? "heart.fill" : "heart")
+                            .font(.system(size: 20, weight: .medium))
+                        
+                        Text(outfit.isFavorite ? "解除" : "登録")
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(outfit.isFavorite ? .red : DesignSystem.Colors.accent)
+                    .padding(.horizontal, DesignSystem.Spacing.md)
+                    .padding(.vertical, DesignSystem.Spacing.sm)
+                    .background(
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
+                            .fill(outfit.isFavorite ? Color.red.opacity(0.1) : DesignSystem.Colors.accent.opacity(0.1))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
+                            .stroke(outfit.isFavorite ? Color.red : DesignSystem.Colors.accent, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .padding(.horizontal, DesignSystem.Spacing.md)
+    }
+    
+    private var trailingButtons: some View {
+        HStack(spacing: DesignSystem.Spacing.md) {
+            favoriteButton
+            deleteButton
+        }
+    }
+    
+    private var favoriteButton: some View {
+        Button(action: toggleFavorite) {
+            Image(systemName: outfit.isFavorite ? "heart.fill" : "heart")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundColor(outfit.isFavorite ? .red : DesignSystem.Colors.accent)
         }
     }
     

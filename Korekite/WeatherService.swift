@@ -54,7 +54,7 @@ struct ForecastData: Codable {
     }
 }
 
-struct WeatherInfo {
+struct WeatherInfo: Equatable {
     let temperature: Double
     let tempMin: Double
     let tempMax: Double
