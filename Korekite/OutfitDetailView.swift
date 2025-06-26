@@ -7,6 +7,8 @@ struct OutfitDetailView: View {
     @ObservedObject var categoryManager: CategoryManager
     @ObservedObject var storageManager: StorageManager
     @ObservedObject var itemNameManager: ItemNameManager
+    @State private var isEditingName = false
+    @State private var editedName: String = ""
     @State private var isEditingMemo = false
     @State private var editedMemo: String = ""
     @State private var showingCategoryPicker = false
@@ -31,6 +33,7 @@ struct OutfitDetailView: View {
         ScrollView {
             VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
                 imageSection
+                nameSection
                 categorySection
                 memoSection
                 itemsSection
@@ -65,9 +68,20 @@ struct OutfitDetailView: View {
                 if let item = newValue,
                    let data = try? await item.loadTransferable(type: Data.self) {
                     await MainActor.run {
-                        var updatedClothing = outfit
-                        updatedClothing.imageData = data
-                        outfit = updatedClothing
+                        var updatedOutfit = outfit
+                        
+                        // 古い画像ファイルを削除
+                        if let oldFilename = updatedOutfit.imageFilename {
+                            ImageStorageManager.shared.deleteImage(filename: oldFilename)
+                        }
+                        
+                        // 新しい画像を保存
+                        if let filename = storageManager.saveImage(data, for: updatedOutfit.id) {
+                            updatedOutfit.imageFilename = filename
+                            updatedOutfit.imageData = nil // 古い方式のデータをクリア
+                        }
+                        
+                        outfit = updatedOutfit
                         displayedImage = Image(uiImage: .init(data: data) ?? .init())
                         storageManager.updateOutfit(outfit)
                     }
@@ -178,6 +192,8 @@ struct OutfitDetailView: View {
         CardView(padding: DesignSystem.Spacing.cardPadding) {
             VStack(spacing: DesignSystem.Spacing.md) {
                 Button(action: {
+                    print("🔍 カテゴリボタンタップ - 現在のカテゴリ数: \(categoryManager.categories.count)")
+                    print("🔍 利用可能なカテゴリ: \(categoryManager.categories)")
                     showingCategoryPicker = true
                 }) {
                     HStack {
@@ -203,22 +219,38 @@ struct OutfitDetailView: View {
         }
         .sheet(isPresented: $showingCategoryPicker) {
             categoryPickerSheet
+                .onAppear {
+                    print("🔍 カテゴリピッカーシート表示 - カテゴリ数: \(categoryManager.categories.count)")
+                }
         }
     }
     
     @ViewBuilder
     private var categoryPickerSheet: some View {
         NavigationView {
-            List(categoryManager.categories, id: \.self) { category in
-                Button(action: {
-                    outfit.category = category
+            if categoryManager.categories.isEmpty {
+                VStack {
+                    Text("カテゴリがありません")
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                        .padding()
+                    
+                    Text("カテゴリ数: \(categoryManager.categories.count)")
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(DesignSystem.Colors.textTertiary)
+                }
+                .navigationTitle("カテゴリー選択")
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarItems(trailing: Button("キャンセル") {
                     showingCategoryPicker = false
-                    storageManager.updateOutfit(outfit)
-                }) {
+                }
+                .foregroundColor(DesignSystem.Colors.accent))
+            } else {
+                List(categoryManager.categories, id: \.self) { category in
                     HStack {
                         Text(category)
                             .font(DesignSystem.Typography.bodyMedium)
-                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                            .foregroundColor(.primary)
                         Spacer()
                         if category == outfit.category {
                             Image(systemName: "checkmark")
@@ -226,15 +258,61 @@ struct OutfitDetailView: View {
                                 .foregroundColor(DesignSystem.Colors.accent)
                         }
                     }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        print("🔍 カテゴリ選択: \(category)")
+                        outfit.category = category
+                        showingCategoryPicker = false
+                        storageManager.updateOutfit(outfit)
+                        print("🔍 アウトフィット更新完了: \(outfit.category)")
+                    }
                 }
-                .buttonStyle(PlainButtonStyle())
+                .navigationTitle("カテゴリー選択")
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarItems(trailing: Button("キャンセル") {
+                    showingCategoryPicker = false
+                }
+                .foregroundColor(DesignSystem.Colors.accent))
             }
-            .navigationTitle("カテゴリー選択")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(trailing: Button("キャンセル") {
-                showingCategoryPicker = false
+        }
+    }
+    
+    @ViewBuilder
+    private var nameSection: some View {
+        CardView(padding: DesignSystem.Spacing.cardPadding) {
+            VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                HStack {
+                    Text("アイテム名")
+                        .font(DesignSystem.Typography.headlineBold)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        if isEditingName {
+                            outfit.name = editedName
+                            storageManager.updateOutfit(outfit)
+                        } else {
+                            editedName = outfit.name
+                        }
+                        isEditingName.toggle()
+                    }) {
+                        Image(systemName: isEditingName ? "checkmark.circle.fill" : "pencil.circle")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(isEditingName ? DesignSystem.Colors.success : DesignSystem.Colors.accent)
+                    }
+                }
+                
+                if isEditingName {
+                    TextField("アイテム名を入力", text: $editedName)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .font(DesignSystem.Typography.body)
+                } else {
+                    Text(outfit.name)
+                        .font(DesignSystem.Typography.bodyMedium)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                }
             }
-            .foregroundColor(DesignSystem.Colors.accent))
         }
     }
     

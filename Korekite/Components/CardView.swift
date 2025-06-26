@@ -160,6 +160,7 @@ struct WeatherCard: View {
 
 struct OutfitCard: View {
     let outfit: Outfit
+    @ObservedObject var storageManager: StorageManager
     
     var body: some View {
         VStack(spacing: 0) {
@@ -180,6 +181,21 @@ struct OutfitCard: View {
                     startPoint: .top,
                     endPoint: .bottom
                 )
+                
+                // お気に入りボタン
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: toggleFavorite) {
+                            Image(systemName: outfit.isFavorite ? "heart.fill" : "heart")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(outfit.isFavorite ? .red : .white)
+                                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
+                        }
+                        .padding(DesignSystem.Spacing.sm)
+                    }
+                    Spacer()
+                }
             }
             .cornerRadius(DesignSystem.CornerRadius.image, corners: [.topLeft, .topRight])
             
@@ -219,6 +235,12 @@ struct OutfitCard: View {
         .designSystemShadow(DesignSystem.Shadow.card)
         .scaleEffect(1.0)
         .animation(DesignSystem.Animation.smooth, value: false)
+    }
+    
+    private func toggleFavorite() {
+        var updatedOutfit = outfit
+        updatedOutfit.isFavorite.toggle()
+        storageManager.updateOutfit(updatedOutfit)
     }
     
     private func getCategoryIcon(_ category: String) -> String {

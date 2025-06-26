@@ -9,6 +9,7 @@ struct AddOutfitView: View {
     @ObservedObject var storageManager: StorageManager
     @ObservedObject var weatherService: WeatherService
     
+    @State private var itemName: String = ""
     @State private var selectedCategory: String = ""
     @State private var memo: String = ""
     @State private var showingCategoryPicker = false
@@ -80,6 +81,12 @@ struct AddOutfitView: View {
                 }
                 
                 Section(header: Text("基本情報")) {
+                    HStack {
+                        Text("アイテム名")
+                        TextField("例: 白いTシャツ", text: $itemName)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    }
+                    
                     Button(action: {
                         showingCategoryPicker = true
                     }) {
@@ -156,12 +163,19 @@ struct AddOutfitView: View {
     }
     
     private func addClothing() {
-        let newItem = Outfit(
-            name: UUID().uuidString, // 一意のIDを名前として使用
+        let finalName = itemName.isEmpty ? "名称未設定" : itemName
+        var newItem = Outfit(
+            name: finalName,
             category: selectedCategory,
-            memo: memo,
-            imageData: selectedImageData
+            memo: memo
         )
+        
+        // 画像をファイルとして保存
+        if let imageData = selectedImageData,
+           let filename = storageManager.saveImage(imageData, for: newItem.id) {
+            newItem.imageFilename = filename
+        }
+        
         storageManager.addOutfit(newItem)
         dismiss()
     }

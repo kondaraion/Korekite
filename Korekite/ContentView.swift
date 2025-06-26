@@ -14,8 +14,10 @@ struct ContentView: View {
     @StateObject private var locationManager = LocationManager()
     @StateObject private var weatherService = WeatherService()
     @StateObject private var itemNameManager = ItemNameManager()
+    @StateObject private var searchManager = SearchManager()
     @AppStorage("selectedCategory") private var selectedCategory: String?
     @State private var showingAddClothing = false
+    @State private var showingAnalytics = false
     
     // 2列のグリッドレイアウト
     private let columns = [
@@ -24,10 +26,14 @@ struct ContentView: View {
     ]
     
     var filteredItems: [Outfit] {
+        let baseItems: [Outfit]
         if let category = selectedCategory, !category.isEmpty {
-            return storageManager.outfits.filter { $0.category == category }
+            baseItems = storageManager.outfits.filter { $0.category == category }
+        } else {
+            baseItems = storageManager.outfits
         }
-        return storageManager.outfits
+        
+        return searchManager.filteredAndSortedOutfits(baseItems)
     }
     
     var recommendedItems: [Outfit] {
@@ -41,6 +47,10 @@ struct ContentView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
+                    // ナビゲーションヘッダー用のスペーサー
+                    Spacer()
+                        .frame(height: 40)
+                    
                     // 天気情報表示
                     if let weatherInfo = weatherService.weatherInfo {
                         CardView(padding: DesignSystem.Spacing.cardPadding) {
@@ -148,11 +158,15 @@ struct ContentView: View {
                         .padding(.horizontal, DesignSystem.Spacing.md)
                     }
                     
+                    // 検索・フィルタリング
+                    SearchAndFilterView(searchManager: searchManager, categoryManager: categoryManager)
+                        .padding(.horizontal, DesignSystem.Spacing.md)
+                    
                     // 服のグリッド
                     LazyVGrid(columns: columns, spacing: DesignSystem.Spacing.sm) {
                         ForEach(filteredItems) { item in
                             NavigationLink(destination: OutfitDetailView(outfit: binding(for: item), categoryManager: categoryManager, storageManager: storageManager, itemNameManager: itemNameManager)) {
-                                OutfitCard(outfit: item)
+                                OutfitCard(outfit: item, storageManager: storageManager)
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
@@ -173,6 +187,29 @@ struct ContentView: View {
             )
             .navigationBarHidden(true)
             .overlay(
+                // トップナビゲーション
+                VStack {
+                    HStack {
+                        Image("logo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 32)
+                        
+                        Spacer()
+                        
+                        Button(action: { showingAnalytics = true }) {
+                            Image(systemName: "chart.bar")
+                                .font(.system(size: 20))
+                                .foregroundColor(DesignSystem.Colors.accent)
+                        }
+                    }
+                    .padding(.horizontal, DesignSystem.Spacing.md)
+                    .padding(.top, DesignSystem.Spacing.sm)
+                    
+                    Spacer()
+                }
+            )
+            .overlay(
                 // 右下のFloating Action Button
                 VStack {
                     Spacer()
@@ -189,6 +226,9 @@ struct ContentView: View {
             .sheet(isPresented: $showingAddClothing) {
                 AddOutfitView(categoryManager: categoryManager, storageManager: storageManager, weatherService: weatherService)
             }
+            .sheet(isPresented: $showingAnalytics) {
+                AnalyticsView(storageManager: storageManager)
+            }
             .onAppear {
                 locationManager.requestLocation()
                 
@@ -202,6 +242,7 @@ struct ContentView: View {
                     weatherService.fetchWeather(for: location)
                 }
             }
+            .errorAlert(storageManager.errorManager)
         }
     }
     
