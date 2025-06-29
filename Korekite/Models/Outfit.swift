@@ -12,12 +12,13 @@ struct Outfit: Identifiable, Codable, Hashable {
     var imageFilename: String? // 新しい画像ファイル参照
     var itemNames: [String]
     var isFavorite: Bool
+    var isReferenceImage: Bool
     
     // パフォーマンス向上のための画像キャッシュ（エンコード対象外）
     private var _cachedUIImage: UIImage?
     private var _cacheKey: String?
     
-    init(id: UUID = UUID(), name: String, category: String, memo: String = "", wearHistory: [Date] = [], imageData: Data? = nil, imageFilename: String? = nil, itemNames: [String] = [], isFavorite: Bool = false) {
+    init(id: UUID = UUID(), name: String, category: String, memo: String = "", wearHistory: [Date] = [], imageData: Data? = nil, imageFilename: String? = nil, itemNames: [String] = [], isFavorite: Bool = false, isReferenceImage: Bool = false) {
         self.id = id
         self.name = name
         self.category = category
@@ -27,6 +28,7 @@ struct Outfit: Identifiable, Codable, Hashable {
         self.imageFilename = imageFilename
         self.itemNames = itemNames
         self.isFavorite = isFavorite
+        self.isReferenceImage = isReferenceImage
         
         // キャッシュは初期化時にnilに設定
         self._cachedUIImage = nil
@@ -117,7 +119,7 @@ struct Outfit: Identifiable, Codable, Hashable {
     // MARK: - Codable
     
     enum CodingKeys: String, CodingKey {
-        case id, name, category, memo, wearHistory, imageData, imageFilename, itemNames, isFavorite
+        case id, name, category, memo, wearHistory, imageData, imageFilename, itemNames, isFavorite, isReferenceImage
     }
     
     init(from decoder: Decoder) throws {
@@ -131,6 +133,7 @@ struct Outfit: Identifiable, Codable, Hashable {
         imageFilename = try container.decodeIfPresent(String.self, forKey: .imageFilename)
         itemNames = try container.decode([String].self, forKey: .itemNames)
         isFavorite = try container.decode(Bool.self, forKey: .isFavorite)
+        isReferenceImage = try container.decodeIfPresent(Bool.self, forKey: .isReferenceImage) ?? false
         
         // キャッシュは初期化時にnilに設定
         _cachedUIImage = nil
@@ -148,6 +151,7 @@ struct Outfit: Identifiable, Codable, Hashable {
         try container.encodeIfPresent(imageFilename, forKey: .imageFilename)
         try container.encode(itemNames, forKey: .itemNames)
         try container.encode(isFavorite, forKey: .isFavorite)
+        try container.encode(isReferenceImage, forKey: .isReferenceImage)
     }
     
     // MARK: - Hashable

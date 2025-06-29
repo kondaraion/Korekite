@@ -426,8 +426,10 @@ struct ContentView: View {
             return
         }
         
-        // シンプルなフィルタリングなので直接実行
-        let recommended = storageManager.outfits.filter { $0.category == weatherInfo.recommendedCategory }
+        // 参考画像を除外してフィルタリング
+        let recommended = storageManager.outfits.filter { 
+            $0.category == weatherInfo.recommendedCategory && !$0.isReferenceImage 
+        }
         
         self.cachedRecommendedItems = recommended
     }

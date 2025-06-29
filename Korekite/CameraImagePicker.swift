@@ -4,6 +4,7 @@ import AVFoundation
 
 struct CameraImagePicker: UIViewControllerRepresentable {
     @Binding var selectedImage: UIImage?
+    @State private var permissionDenied = false
     @Environment(\.presentationMode) var presentationMode
     
     var sourceType: UIImagePickerController.SourceType = .camera
@@ -23,10 +24,20 @@ struct CameraImagePicker: UIViewControllerRepresentable {
                 // 権限あり、カメラを使用
                 finalSourceType = .camera
             case .notDetermined:
-                // 権限未確認の場合はとりあえずライブラリを使用
-                finalSourceType = .photoLibrary
+                // 権限未確認の場合、権限リクエストを送信
+                AVCaptureDevice.requestAccess(for: .video) { granted in
+                    DispatchQueue.main.async {
+                        if !granted {
+                            self.permissionDenied = true
+                        }
+                    }
+                }
+                finalSourceType = .camera
             case .denied, .restricted:
-                // 権限拒否、フォトライブラリにフォールバック
+                // 権限拒否、ユーザーに通知してフォトライブラリにフォールバック
+                DispatchQueue.main.async {
+                    self.permissionDenied = true
+                }
                 finalSourceType = .photoLibrary
             @unknown default:
                 finalSourceType = .photoLibrary

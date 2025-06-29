@@ -12,6 +12,7 @@ struct AddOutfitView: View {
     @State private var itemName: String = ""
     @State private var selectedCategory: String = ""
     @State private var memo: String = ""
+    @State private var isReferenceImage: Bool = false
     @State private var showingCategoryPicker = false
     @State private var selectedItem: PhotosPickerItem?
     @State private var selectedImageData: Data?
@@ -19,6 +20,7 @@ struct AddOutfitView: View {
     @State private var showingCameraPicker = false
     @State private var showingPhotoPicker = false
     @State private var capturedImage: UIImage?
+    @State private var showingCameraPermissionAlert = false
     
     var body: some View {
         NavigationView {
@@ -70,6 +72,11 @@ struct AddOutfitView: View {
                         }
                         .sheet(isPresented: $showingCameraPicker) {
                             CameraImagePicker(selectedImage: $capturedImage, sourceType: .camera)
+                                .onChange(of: showingCameraPicker) { _, newValue in
+                                    if !newValue {
+                                        checkCameraPermissionAndShowAlert()
+                                    }
+                                }
                         }
                         .sheet(isPresented: $showingPhotoPicker) {
                             CameraImagePicker(selectedImage: $capturedImage, sourceType: .photoLibrary)
@@ -99,6 +106,13 @@ struct AddOutfitView: View {
                                 .foregroundColor(.gray)
                         }
                     }
+                    
+                    HStack {
+                        Text("参考画像")
+                        Spacer()
+                        Toggle("", isOn: $isReferenceImage)
+                    }
+                    .padding(.vertical, 4)
                 }
                 
                 Section(header: Text("メモ")) {
@@ -155,6 +169,16 @@ struct AddOutfitView: View {
                 }
             }
         }
+        .alert("カメラアクセス許可", isPresented: $showingCameraPermissionAlert) {
+            Button("設定を開く") {
+                if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(settingsUrl)
+                }
+            }
+            Button("キャンセル", role: .cancel) {}
+        } message: {
+            Text("カメラを使用するには、設定でカメラへのアクセスを許可してください。")
+        }
         .onAppear {
             if selectedCategory.isEmpty {
                 selectedCategory = weatherService.weatherInfo?.recommendedCategory ?? ""
@@ -167,7 +191,8 @@ struct AddOutfitView: View {
         var newItem = Outfit(
             name: finalName,
             category: selectedCategory,
-            memo: memo
+            memo: memo,
+            isReferenceImage: isReferenceImage
         )
         
         // 画像をファイルとして保存
@@ -187,5 +212,12 @@ struct AddOutfitView: View {
         
         let authStatus = AVCaptureDevice.authorizationStatus(for: .video)
         return authStatus == .authorized || authStatus == .notDetermined
+    }
+    
+    private func checkCameraPermissionAndShowAlert() {
+        let authStatus = AVCaptureDevice.authorizationStatus(for: .video)
+        if authStatus == .denied || authStatus == .restricted {
+            showingCameraPermissionAlert = true
+        }
     }
 } 
