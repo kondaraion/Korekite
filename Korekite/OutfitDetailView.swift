@@ -20,6 +20,7 @@ struct OutfitDetailView: View {
     @State private var lastScale: CGFloat = 1.0
     @State private var showingItemEditor = false
     @State private var editedItemNames: [String] = []
+    @State private var showingConversionConfirmation = false
     
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -33,6 +34,13 @@ struct OutfitDetailView: View {
         ScrollView {
             VStack(spacing: DesignSystem.Spacing.sectionSpacing) {
                 imageSection
+                
+                // 参考画像の場合のみバッジとコンバート機能を表示
+                if outfit.isReferenceImage {
+                    referenceImageSection
+                    conversionSection
+                }
+                
                 nameSection
                 categorySection
                 memoSection
@@ -54,6 +62,15 @@ struct OutfitDetailView: View {
             Button("キャンセル", role: .cancel) {}
         } message: {
             Text("この服を削除してもよろしいですか？")
+        }
+        .alert("変換の確認", isPresented: $showingConversionConfirmation) {
+            Button("変換", role: .destructive) {
+                storageManager.convertReferenceToRegular(outfit)
+                outfit.isReferenceImage = false
+            }
+            Button("キャンセル", role: .cancel) {}
+        } message: {
+            Text("この参考画像を通常のコーディネートに変換しますか？\n\n変換後は天気による推奨の対象となり、着用履歴を記録できるようになります。")
         }
         .sheet(isPresented: $showingItemEditor) {
             NavigationView {
@@ -85,6 +102,9 @@ struct OutfitDetailView: View {
                         outfit = updatedOutfit
                         displayedImage = Image(uiImage: .init(data: data) ?? .init())
                         storageManager.updateOutfit(outfit)
+                        
+                        // 画像表示を強制的に更新
+                        selectedItem = nil
                     }
                 }
             }
@@ -574,6 +594,87 @@ struct OutfitDetailView: View {
                 .font(.system(size: 18, weight: .medium))
                 .foregroundColor(DesignSystem.Colors.error)
         }
+    }
+    
+    // MARK: - Reference Image Views
+    
+    @ViewBuilder
+    private var referenceImageSection: some View {
+        CardView(padding: DesignSystem.Spacing.cardPadding) {
+            HStack(spacing: DesignSystem.Spacing.md) {
+                Image(systemName: "eye.fill")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(DesignSystem.Colors.accent)
+                
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                    Text("参考画像")
+                        .font(DesignSystem.Typography.headline)
+                        .foregroundColor(DesignSystem.Colors.textPrimary)
+                    
+                    Text("このアイテムは参考画像として登録されています")
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(DesignSystem.Colors.textSecondary)
+                }
+                
+                Spacer()
+                
+                HStack(spacing: DesignSystem.Spacing.sm) {
+                    Text("参考")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(DesignSystem.Colors.textInverse)
+                        .padding(.horizontal, DesignSystem.Spacing.sm)
+                        .padding(.vertical, 4)
+                        .background(
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
+                                .fill(DesignSystem.Colors.accent)
+                        )
+                }
+            }
+        }
+        .padding(.horizontal, DesignSystem.Spacing.md)
+    }
+    
+    @ViewBuilder
+    private var conversionSection: some View {
+        CardView(padding: DesignSystem.Spacing.cardPadding) {
+            VStack(spacing: DesignSystem.Spacing.md) {
+                HStack {
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                        Text("通常のコーディネートに変換")
+                            .font(DesignSystem.Typography.headline)
+                            .foregroundColor(DesignSystem.Colors.textPrimary)
+                        
+                        Text("変換すると天気による推奨や着用履歴の記録が可能になります")
+                            .font(DesignSystem.Typography.body)
+                            .foregroundColor(DesignSystem.Colors.textSecondary)
+                    }
+                    
+                    Spacer()
+                }
+                
+                Button(action: {
+                    showingConversionConfirmation = true
+                }) {
+                    HStack(spacing: DesignSystem.Spacing.sm) {
+                        Image(systemName: "arrow.right.circle.fill")
+                            .font(.system(size: 16, weight: .medium))
+                        
+                        Text("変換する")
+                            .font(DesignSystem.Typography.bodyMedium)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundColor(DesignSystem.Colors.textInverse)
+                    .padding(.horizontal, DesignSystem.Spacing.lg)
+                    .padding(.vertical, DesignSystem.Spacing.md)
+                    .background(
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.button)
+                            .fill(DesignSystem.Colors.accent)
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .padding(.horizontal, DesignSystem.Spacing.md)
     }
 }
 

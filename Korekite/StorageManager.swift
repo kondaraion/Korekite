@@ -169,6 +169,23 @@ class StorageManager: ObservableObject {
         return ImageStorageManager.shared.saveImage(compressedData, for: outfitId)
     }
     
+    // 参考画像を通常のコーディネートに変換
+    func convertReferenceToRegular(_ outfit: Outfit) {
+        DispatchQueue.main.async {
+            if let index = self.outfits.firstIndex(where: { $0.id == outfit.id }) {
+                var updatedOutfit = self.outfits[index]
+                
+                // 参考画像フラグをfalseに設定
+                updatedOutfit.isReferenceImage = false
+                
+                self.outfits[index] = updatedOutfit
+                self.saveOutfitsImmediately() // 変換は即座に保存
+                
+                print("参考画像を通常のコーディネートに変換しました: \(outfit.name)")
+            }
+        }
+    }
+    
     // MARK: - Migration
     
     private func migrateImagesIfNeeded() {
